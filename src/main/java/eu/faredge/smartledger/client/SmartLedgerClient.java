@@ -4,10 +4,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.faredge.smartledger.client.helper.SmartLedgerClientHelper;
 import eu.faredge.smartledger.client.model.DCM;
 import eu.faredge.smartledger.client.model.DSM;
+import eu.faredge.smartledger.client.util.Util;
 import org.hyperledger.fabric.sdk.BlockEvent;
 import org.hyperledger.fabric.sdk.Channel;
+import org.hyperledger.fabric.sdk.exception.ChaincodeEndorsementPolicyParseException;
+import org.hyperledger.fabric.sdk.exception.InvalidArgumentException;
+import org.hyperledger.fabric.sdk.exception.ProposalException;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 public class SmartLedgerClient implements eu.faredge.smartledger.client.base.SmartLedgerClient {
 
@@ -36,6 +44,22 @@ public class SmartLedgerClient implements eu.faredge.smartledger.client.base.Sma
         return null;
     }
 
+    public void installChaincode(boolean instantiate) throws Exception {
+        SmartLedgerClientHelper.installChaincode(channel);
+        Util.out("Chaincode installed correctly!!!");
+        if (instantiate) {
+            instantiateChaincode();
+
+        }
+    }
+
+    public void instantiateChaincode() throws Exception {
+        String[] args = {};
+        CompletableFuture<BlockEvent.TransactionEvent> transactionEventCompletableFuture = SmartLedgerClientHelper.instantiateChaincode(channel, args);
+        transactionEventCompletableFuture.get(120, TimeUnit.SECONDS);
+        Util.out("Chaincode instantiated correctly!!!");
+    }
+
     @Override
     public String register(DCM dcm) throws Exception {
         return null;
@@ -54,10 +78,13 @@ public class SmartLedgerClient implements eu.faredge.smartledger.client.base.Sma
 
     @Override
     public List<String[]> getAllDataSourceManifests() throws Exception {
+        return doGetAllDataSourceManifests();
+    }
+
+    private List<String[]> doGetAllDataSourceManifests() {
         String[] args = {};
-        final List<String[]> values = SmartLedgerClientHelper.queryChainCode(channel, "queryAllCars", args);
-        if (null == values || values.isEmpty())
-            throw new Exception("Value from chaincode is Empty");
+        final List<String[]> values = SmartLedgerClientHelper.queryChainCode(channel, "queryAllDSMs", args);
+        Util.out("Values retrieved", values.toString());
         return values;
     }
 }

@@ -104,6 +104,25 @@ public class Util {
 
     }
 
+    public static void out(String format, Object... args) {
+
+        System.err.flush();
+        System.out.flush();
+
+        System.out.println(format(format, args));
+        System.err.flush();
+        System.out.flush();
+
+    }
+
+    public static void fail(String message) {
+        if (message == null) {
+            throw new RuntimeException();
+        } else {
+            throw new RuntimeException(message);
+        }
+    }
+
     /**
      * Fabric Certificate authority information
      * Contains information for the Fabric certificate authority

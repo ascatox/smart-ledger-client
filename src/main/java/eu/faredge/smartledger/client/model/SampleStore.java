@@ -142,7 +142,6 @@ public class SampleStore {
             return true;
         }
         return SampleUser.isStored(name, org, this);
-
     }
 
     /**
@@ -161,7 +160,6 @@ public class SampleStore {
      */
     public SampleUser getMember(String name, String org, String mspId, File privateKeyFile,
                                 File certificateFile) throws IOException, NoSuchAlgorithmException, NoSuchProviderException, InvalidKeySpecException {
-
         try {
             // Try to get the SampleUser state from the cache
             SampleUser sampleUser = members.get(SampleUser.toKeyValStoreName(name, org));
@@ -199,7 +197,6 @@ public class SampleStore {
             e.printStackTrace();
             throw e;
         }
-
     }
 
     static {

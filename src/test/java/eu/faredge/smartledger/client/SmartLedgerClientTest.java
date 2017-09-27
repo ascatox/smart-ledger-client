@@ -25,7 +25,7 @@ public class SmartLedgerClientTest {
         dsm.setConnectionParameters("ipaddr=162.232.7.15&ipport=9000");
     }
 
-    //  @Test
+    //@Test
     public void testRegisterDSM() {
         SmartLedgerClient client = new SmartLedgerClient("mychannel");
         try {
@@ -38,11 +38,11 @@ public class SmartLedgerClientTest {
         }
     }
 
-
-    @Test
-    public void testGetAllDataSourceManifests() {
-        SmartLedgerClient client = new SmartLedgerClient("mychannel");
+   //@Test
+    public void testGetAllDataSourceManifestsWithInstallChaincode() {
         try {
+            SmartLedgerClient client = new SmartLedgerClient("mychannel");
+            client.installChaincode(false);
             List<String[]> allDSMs = client.getAllDataSourceManifests();
             assertNotNull(allDSMs);
             assertFalse(allDSMs.isEmpty());
@@ -51,5 +51,17 @@ public class SmartLedgerClientTest {
         }
     }
 
+    @Test
+    public void testGetAllDataSourceManifests() {
+        try {
+            SmartLedgerClient client = new SmartLedgerClient("mychannel");
+           // client.instantiateChaincode();
+            List<String[]> allDSMs = client.getAllDataSourceManifests();
+            assertNotNull(allDSMs);
+            assertFalse(allDSMs.isEmpty());
+        } catch (Exception e) {
+            assertFalse(e.getMessage(), true);
+        }
+    }
 
 }
