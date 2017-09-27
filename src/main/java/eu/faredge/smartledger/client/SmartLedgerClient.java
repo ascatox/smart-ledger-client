@@ -7,14 +7,9 @@ import eu.faredge.smartledger.client.model.DSM;
 import eu.faredge.smartledger.client.util.Util;
 import org.hyperledger.fabric.sdk.BlockEvent;
 import org.hyperledger.fabric.sdk.Channel;
-import org.hyperledger.fabric.sdk.exception.ChaincodeEndorsementPolicyParseException;
-import org.hyperledger.fabric.sdk.exception.InvalidArgumentException;
-import org.hyperledger.fabric.sdk.exception.ProposalException;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 public class SmartLedgerClient implements eu.faredge.smartledger.client.base.SmartLedgerClient {
@@ -38,8 +33,12 @@ public class SmartLedgerClient implements eu.faredge.smartledger.client.base.Sma
     public String register(DSM dsm) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         String json = mapper.writeValueAsString(dsm);
-        String[] args = {"createDevice", json};
-        BlockEvent.TransactionEvent transactionEvent = SmartLedgerClientHelper.invokeChaincode(channel, args, null).get();
+        String[] args = {"createDSM", dsm.getPhysicalArtifact(), dsm.getUri(), dsm.getMacAddress(), dsm.getDsd(), dsm
+                .getConnectionParameters()};
+        BlockEvent.TransactionEvent transactionEvent = SmartLedgerClientHelper.invokeChaincode(channel,
+                "createDSM", args)
+                .get
+                        (120, TimeUnit.SECONDS);
         channel.shutdown(false);
         return null;
     }
@@ -55,7 +54,8 @@ public class SmartLedgerClient implements eu.faredge.smartledger.client.base.Sma
 
     public void instantiateChaincode() throws Exception {
         String[] args = {};
-        CompletableFuture<BlockEvent.TransactionEvent> transactionEventCompletableFuture = SmartLedgerClientHelper.instantiateChaincode(channel, args);
+        CompletableFuture<BlockEvent.TransactionEvent> transactionEventCompletableFuture = SmartLedgerClientHelper
+                .instantiateChaincode(channel, args);
         transactionEventCompletableFuture.get(120, TimeUnit.SECONDS);
         Util.out("Chaincode instantiated correctly!!!");
     }
@@ -84,7 +84,8 @@ public class SmartLedgerClient implements eu.faredge.smartledger.client.base.Sma
     private List<String[]> doGetAllDataSourceManifests() {
         String[] args = {};
         final List<String[]> values = SmartLedgerClientHelper.queryChainCode(channel, "queryAllDSMs", args);
-        Util.out("Values retrieved", values.toString());
+        Util.out("Query Chaincode successful!!!Data retrieved", values.toString());
+        //TODO JSON Unmarshall to have a list of DSM objects!!!
         return values;
     }
 }

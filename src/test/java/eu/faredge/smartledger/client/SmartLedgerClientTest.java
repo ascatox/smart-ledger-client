@@ -20,22 +20,10 @@ public class SmartLedgerClientTest {
     @Before
     public void setup() {
         dsm = new DSM();
+        dsm.setPhysicalArtifact("device pippo");
         dsm.setUri("dsrc:51e5f645-38aa-4a14-90d3-0986608a9684");
         dsm.setMacAddress("ffaab1292002ddd");
-        dsm.setConnectionParameters("ipaddr=162.232.7.15&ipport=9000");
-    }
-
-    //@Test
-    public void testRegisterDSM() {
-        SmartLedgerClient client = new SmartLedgerClient("mychannel");
-        try {
-            String register = client.register(dsm);
-            assertNotNull(register);
-            assertNotEquals(register, "");
-        } catch (Exception e) {
-            assertFalse(e.getMessage(), true);
-
-        }
+        dsm.setConnectionParameters("ldldldlld");
     }
 
    //@Test
@@ -55,7 +43,6 @@ public class SmartLedgerClientTest {
     public void testGetAllDataSourceManifests() {
         try {
             SmartLedgerClient client = new SmartLedgerClient("mychannel");
-           // client.instantiateChaincode();
             List<String[]> allDSMs = client.getAllDataSourceManifests();
             assertNotNull(allDSMs);
             assertFalse(allDSMs.isEmpty());
@@ -63,5 +50,19 @@ public class SmartLedgerClientTest {
             assertFalse(e.getMessage(), true);
         }
     }
+
+    //@Test
+    public void testRegisterDSM() {
+        SmartLedgerClient client = new SmartLedgerClient("mychannel");
+        try {
+            String register = client.register(dsm);
+            assertNotNull(register);
+            assertNotEquals(register, "");
+        } catch (Exception e) {
+            assertFalse(e.getMessage(), true);
+
+        }
+    }
+
 
 }

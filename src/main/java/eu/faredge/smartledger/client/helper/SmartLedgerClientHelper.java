@@ -51,6 +51,10 @@ public class SmartLedgerClientHelper {
     private static SampleOrg sampleOrg = null;
     private static Collection<Orderer> orderers = null;
 
+    private static SampleUser user = null;
+    private static SampleUser admin = null;
+    private static SampleUser peerOrgAdmin = null;
+
     private static final Map<String, String> TX_EXPECTED;
 
     static {
@@ -62,7 +66,7 @@ public class SmartLedgerClientHelper {
 
     public static void checkConfig() throws NoSuchFieldException, SecurityException, IllegalArgumentException,
             IllegalAccessException, MalformedURLException, org.hyperledger
-            .fabric_ca.sdk.exception.InvalidArgumentException {
+                    .fabric_ca.sdk.exception.InvalidArgumentException {
         Util.out("\n\n\nRUNNING: SmartLedgerClient.\n");
 
         chaincodeID = ChaincodeID.newBuilder().setName(CHAIN_CODE_NAME)
@@ -83,8 +87,6 @@ public class SmartLedgerClientHelper {
             }
         }
     }
-
-
     public static void setup() {
         try {
 
@@ -123,14 +125,14 @@ public class SmartLedgerClientHelper {
                 final String mspid = sampleOrg.getMSPID();
                 ca.setCryptoSuite(CryptoSuite.Factory.getCryptoSuite());
 
-                SampleUser admin = sampleStore.getMember(TEST_ADMIN_NAME, orgName);
+                admin = sampleStore.getMember(TEST_ADMIN_NAME, orgName);
                 if (!admin.isEnrolled()) {  //Preregistered admin only needs to be enrolled with Fabric caClient.
                     admin.setEnrollment(ca.enroll(admin.getName(), "adminpw"));
                     admin.setMspId(mspid);
                 }
                 sampleOrg.setAdmin(admin); // The admin of this org --
 
-                SampleUser user = sampleStore.getMember(TESTUSER_1_NAME, sampleOrg.getName());
+                user = sampleStore.getMember(TESTUSER_1_NAME, sampleOrg.getName());
 //TODO @ascatox Understand how to mark an User as registered and enrolled
 //                if (!user.isRegistered()) {  // users need to be registered AND enrolled
 //                    RegistrationRequest rr = new RegistrationRequest(user.getName(), "org1.department1");
@@ -145,7 +147,7 @@ public class SmartLedgerClientHelper {
                 final String sampleOrgName = sampleOrg.getName();
                 final String sampleOrgDomainName = sampleOrg.getDomainName();
 
-                SampleUser peerOrgAdmin = sampleStore.getMember(sampleOrgName + "Admin", sampleOrgName, sampleOrg
+                peerOrgAdmin = sampleStore.getMember(sampleOrgName + "Admin", sampleOrgName, sampleOrg
                                 .getMSPID(),
                         Util.findFileSk(Paths.get(testConfig.getTestChannelPath(),
                                 "crypto-config-fabcar/peerOrganizations/",
@@ -298,66 +300,64 @@ public class SmartLedgerClientHelper {
         return null;
     }
 
-    public static CompletableFuture<BlockEvent.TransactionEvent> invokeChaincode(Channel channel, String[] args, User
-            user) {
-        return invokeChaincode(client, channel, chaincodeID, args, user);
+    public static CompletableFuture<BlockEvent.TransactionEvent> invokeChaincode(Channel channel, String
+            function, String[] args)
+            throws Exception {
+        return invokeChaincode(client, channel, chaincodeID,function, args, peerOrgAdmin);
     }
 
     private static CompletableFuture<BlockEvent.TransactionEvent> invokeChaincode(HFClient client, Channel channel,
-                                                                                  ChaincodeID chaincodeID, String[]
-                                                                                          args, User user) {
-        try {
-            Collection<ProposalResponse> successful = new LinkedList<>();
-            Collection<ProposalResponse> failed = new LinkedList<>();
+                                                                                  ChaincodeID chaincodeID,
+                                                                                  String fcn, String[]
+                                                                                          args, User user) throws
+            Exception {
+        Collection<ProposalResponse> successful = new LinkedList<>();
+        Collection<ProposalResponse> failed = new LinkedList<>();
 
-            ///////////////
-            /// Send transaction proposal to all peers
-            TransactionProposalRequest transactionProposalRequest = client.newTransactionProposalRequest();
-            transactionProposalRequest.setChaincodeID(chaincodeID);
-            transactionProposalRequest.setFcn("invoke");
-            transactionProposalRequest.setArgs(args);  //new String[]{"move", "a", "b", moveAmount}
-            transactionProposalRequest.setProposalWaitTime(testConfig.getProposalWaitTime());
-            if (user != null) { // specific user use that
-                transactionProposalRequest.setUserContext(user);
-            }
-            Util.out("sending transaction proposal to all peers with arguments: (", args[0] + "\"" + args[1] + "\"" +
-                    args[1] + "\"" + args[2]);
-
-            Collection<ProposalResponse> invokePropResp = channel.sendTransactionProposal(transactionProposalRequest);
-            for (ProposalResponse response : invokePropResp) {
-                if (response.getStatus() == ChaincodeResponse.Status.SUCCESS) {
-                    Util.out("Successful transaction proposal response Txid: %s from peer %s", response
-                            .getTransactionID(), response.getPeer().getName());
-                    successful.add(response);
-                } else {
-                    failed.add(response);
-                }
-            }
-
-            Util.out("Received %d transaction proposal responses. Successful+verified: %d . Failed: %d",
-                    invokePropResp.size(), successful.size(), failed.size());
-            if (failed.size() > 0) {
-                ProposalResponse firstTransactionProposalResponse = failed.iterator().next();
-
-                throw new ProposalException(format("Not enough endorsers for invoke(" + args[0] + "):%d endorser " +
-                                "error:%s. Was verified:%b",
-                        args[args.length - 1], firstTransactionProposalResponse.getStatus().getStatus(),
-                        firstTransactionProposalResponse.getMessage(),
-                        firstTransactionProposalResponse.isVerified()));
-            }
-            Util.out("Successfully received transaction proposal responses.");
-
-            ////////////////////////////
-            // Send transaction to orderer
-            Util.out("Sending chaincode transaction(move a,b,%s) to orderer.", args[args.length - 1]);
-            if (user != null) {
-                return channel.sendTransaction(successful, user);
-            }
-            return channel.sendTransaction(successful);
-        } catch (Exception e) {
-
-            throw new CompletionException(e);
+        ///////////////
+        /// Send transaction proposal to all peers
+        TransactionProposalRequest transactionProposalRequest = client.newTransactionProposalRequest();
+        transactionProposalRequest.setChaincodeID(chaincodeID);
+        transactionProposalRequest.setFcn(fcn);
+        transactionProposalRequest.setArgs(args);  //new String[]{"move", "a", "b", moveAmount}
+        transactionProposalRequest.setProposalWaitTime(testConfig.getProposalWaitTime());
+        if (user != null) { // specific user use that
+            transactionProposalRequest.setUserContext(user);
         }
+        Util.out("sending transaction proposal to all peers with arguments: (", args[0] + "\"" + args[1] + "\"" +
+                args[1] + "\"" + args[2]);
+
+        Collection<ProposalResponse> invokePropResp = channel.sendTransactionProposal(transactionProposalRequest);
+        for (ProposalResponse response : invokePropResp) {
+            if (response.getStatus() == ChaincodeResponse.Status.SUCCESS) {
+                Util.out("Successful transaction proposal response Txid: %s from peer %s", response
+                        .getTransactionID(), response.getPeer().getName());
+                successful.add(response);
+            } else {
+                failed.add(response);
+            }
+        }
+
+        Util.out("Received %d transaction proposal responses. Successful+verified: %d . Failed: %d",
+                invokePropResp.size(), successful.size(), failed.size());
+        if (failed.size() > 0) {
+            ProposalResponse firstTransactionProposalResponse = failed.iterator().next();
+
+            throw new ProposalException(format("Not enough endorsers for invoke(" + args[0] + "):%d endorser " +
+                            "error:%s. Was verified:%b",
+                    args[args.length - 1], firstTransactionProposalResponse.getStatus().getStatus(),
+                    firstTransactionProposalResponse.getMessage(),
+                    firstTransactionProposalResponse.isVerified()));
+        }
+        Util.out("Successfully received transaction proposal responses.");
+
+        ////////////////////////////
+        // Send transaction to orderer
+        Util.out("Sending chaincode transaction(move a,b,%s) to orderer.", args[args.length - 1]);
+        if (user != null) {
+            return channel.sendTransaction(successful, user);
+        }
+        return channel.sendTransaction(successful);
     }
 
     public static Channel constructChannel(String name) throws Exception {
@@ -455,7 +455,6 @@ public class SmartLedgerClientHelper {
     }
 
 
-
     void blockWalker(Channel channel) throws InvalidArgumentException, ProposalException, IOException {
         try {
             BlockchainInfo channelInfo = channel.queryBlockchainInfo();
@@ -470,7 +469,7 @@ public class SmartLedgerClientHelper {
                         (returnedBlock.getPreviousHash()));
                 Util.out("current block number %d has calculated block hash is %s", blockNumber, Hex.encodeHexString
                         (SDKUtils.calculateBlockHash(blockNumber, returnedBlock
-                        .getPreviousHash(), returnedBlock.getDataHash())));
+                                .getPreviousHash(), returnedBlock.getDataHash())));
 
                 final int envelopeCount = returnedBlock.getEnvelopeCount();
                 Util.out("current block number %d has %d envelope count:", blockNumber, returnedBlock

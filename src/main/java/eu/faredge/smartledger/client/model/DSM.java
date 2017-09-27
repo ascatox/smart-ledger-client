@@ -9,6 +9,13 @@ public final class DSM implements Serializable {
     private String macAddress;
     private String dsd;
 
+    public DSM() {
+        this.physicalArtifact = "";
+        this.uri = "";
+        this.macAddress = "";
+        this.dsd = "";
+    }
+
     @Override
     public String toString() {
         return "DSM{" +

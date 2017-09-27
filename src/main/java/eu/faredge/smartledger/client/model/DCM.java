@@ -9,6 +9,13 @@ public class DCM implements Serializable {
     private String macAddress;
     private String dsds;
 
+    public DCM() {
+        this.physicalArtifact = "";
+        this.uri = "";
+        this.macAddress = "";
+        this.dsds = "";
+    }
+
     @Override
     public String toString() {
         return "DCM{" +
