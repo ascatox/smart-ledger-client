@@ -27,6 +27,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hyperledger.fabric.sdk.BlockInfo.EnvelopeType.TRANSACTION_ENVELOPE;
 
 public class SmartLedgerClientHelper {
+    public static final String INVOKE = "invoke";
     private static ResourceBundle finder = ResourceBundle.getBundle("smart-ledger");
     private static final TestConfig testConfig = TestConfig.getConfig();
     private static final String TEST_ADMIN_NAME = finder.getString("TEST_ADMIN_NAME");
@@ -260,7 +261,7 @@ public class SmartLedgerClientHelper {
             Util.out("Now query chaincode for the value of b.");
             QueryByChaincodeRequest queryByChaincodeRequest = client.newQueryProposalRequest();
             queryByChaincodeRequest.setArgs(args);
-            queryByChaincodeRequest.setFcn(functionName);
+            queryByChaincodeRequest.setFcn(INVOKE);
             queryByChaincodeRequest.setChaincodeID(chaincodeID);
 
             Map<String, byte[]> tm2 = new HashMap<>();
@@ -318,14 +319,14 @@ public class SmartLedgerClientHelper {
         /// Send transaction proposal to all peers
         TransactionProposalRequest transactionProposalRequest = client.newTransactionProposalRequest();
         transactionProposalRequest.setChaincodeID(chaincodeID);
-        transactionProposalRequest.setFcn(fcn);
+        transactionProposalRequest.setFcn(INVOKE);
         transactionProposalRequest.setArgs(args);  //new String[]{"move", "a", "b", moveAmount}
         transactionProposalRequest.setProposalWaitTime(testConfig.getProposalWaitTime());
         if (user != null) { // specific user use that
             transactionProposalRequest.setUserContext(user);
         }
-        Util.out("sending transaction proposal to all peers with arguments: (", args[0] + "\"" + args[1] + "\"" +
-                args[1] + "\"" + args[2]);
+        Util.out("sending transaction proposal to all peers with arguments: (", args.toString() +"\"");
+
 
         Collection<ProposalResponse> invokePropResp = channel.sendTransactionProposal(transactionProposalRequest);
         for (ProposalResponse response : invokePropResp) {
@@ -343,7 +344,7 @@ public class SmartLedgerClientHelper {
         if (failed.size() > 0) {
             ProposalResponse firstTransactionProposalResponse = failed.iterator().next();
 
-            throw new ProposalException(format("Not enough endorsers for invoke(" + args[0] + "):%d endorser " +
+            throw new ProposalException(format("Not enough endorsers for invoke(" + args.toString() + "):%d endorser " +
                             "error:%s. Was verified:%b",
                     args[args.length - 1], firstTransactionProposalResponse.getStatus().getStatus(),
                     firstTransactionProposalResponse.getMessage(),
@@ -353,7 +354,7 @@ public class SmartLedgerClientHelper {
 
         ////////////////////////////
         // Send transaction to orderer
-        Util.out("Sending chaincode transaction(move a,b,%s) to orderer.", args[args.length - 1]);
+        Util.out("Sending chaincode transaction "+fcn+" to orderer.", args.toString());
         if (user != null) {
             return channel.sendTransaction(successful, user);
         }

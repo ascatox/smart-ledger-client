@@ -32,15 +32,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strconv"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	sc "github.com/hyperledger/fabric/protos/peer"
 )
 
-// Define the Smart Contract structure
-type SmartContract struct {
-}
+var logger = shim.NewLogger("smartfactory")
 
 // Define the device structure, with 4 properties.  Structure tags are used by encoding/json library
 type DSM struct {
@@ -49,6 +48,7 @@ type DSM struct {
 	MACAddress           string `json:"macAddress"`
 	DSD                  string `json:"dsd"`
 	ConnectionParameters string `json:"connectionParameters"`
+	Type                 string `json:"type"`
 }
 
 type DCM struct {
@@ -56,20 +56,13 @@ type DCM struct {
 	URI              string `json:"uri"`
 	MACAddress       string `json:"macAddress"`
 	DSDs             string `json:"dsds"`
-}
-
-type Device struct {
-	SerialNumber string `json:"serialnumber"`
+	Type             string `json:"type"`
 }
 
 /*
  * The Init method is called when the Smart Contract "fabcar" is instantiated by the blockchain network
  * Best practice is to have any Ledger initialization in separate function -- see initLedger()
  */
-
-/*func (d *Device) Init(APIstub shim.ChaincodeStubInterface) sc.Response {
-	return shim.Success(nil)
-}*/
 
 func (s *DSM) Init(APIstub shim.ChaincodeStubInterface) sc.Response {
 	DSMs := []DSM{
@@ -79,6 +72,7 @@ func (s *DSM) Init(APIstub shim.ChaincodeStubInterface) sc.Response {
 			MACAddress:           "123:456:789",
 			DSD:                  "poiuyt",
 			ConnectionParameters: "lkjhgf",
+			Type:                 "DSM",
 		},
 	}
 	j := 0
@@ -99,6 +93,7 @@ func (c *DCM) Init(APIstub shim.ChaincodeStubInterface) sc.Response {
 			URI:              "http://www.eng.it",
 			MACAddress:       "321:654:987",
 			DSDs:             "lkjhg",
+			Type:             "DCM",
 		},
 	}
 	k := 0
@@ -112,73 +107,6 @@ func (c *DCM) Init(APIstub shim.ChaincodeStubInterface) sc.Response {
 
 	return shim.Success(nil)
 }
-
-/*func (c *DCM) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	return nil, nil
-}*/
-
-/*
- * The Invoke method is called as a result of an application request to run the Smart Contract "fabcar"
- * The calling application program has also specified the particular smart contract function to be called, with arguments
- */
-
-// func (d *Device) Invoke(APIstub shim.ChaincodeStubInterface) sc.Response {
-
-// 	// Retrieve the requested Smart Contract function and arguments
-// 	function, args := APIstub.GetFunctionAndParameters()
-// 	// Route to the appropriate handler function to interact with the ledger appropriately
-// 	if function == "queryDevice" {
-// 		return d.queryDevice(APIstub, args)
-// 	} else if function == "createDevice" {
-// 		return d.createDevice(APIstub, args)
-// 	} else if function == "queryAllDevices" {
-// 		return d.queryAllDevices(APIstub)
-// 		/*} else if function == "changeCarOwner" {
-// 		return s.changeCarOwner(APIstub, args)*/
-// 	}
-
-// 	return shim.Error("Invalid Smart Contract function name.")
-// }
-
-func (s *DSM) Invoke(APIstub shim.ChaincodeStubInterface) sc.Response {
-
-	// Retrieve the requested Smart Contract function and arguments
-	function, args := APIstub.GetFunctionAndParameters()
-	// Route to the appropriate handler function to interact with the ledger appropriately
-	if function == "queryDSM" {
-		return s.queryDSM(APIstub, args)
-	} else if function == "createDSM" {
-		return s.createDSM(APIstub, args)
-	} else if function == "queryAllDSMs" {
-		return s.queryAllDSMs(APIstub)
-	}
-	return shim.Error("Invalid Smart Contract function name.")
-}
-
-func (c *DCM) Invoke(APIstub shim.ChaincodeStubInterface) sc.Response {
-
-	// Retrieve the requested Smart Contract function and arguments
-	function, args := APIstub.GetFunctionAndParameters()
-	// Route to the appropriate handler function to interact with the ledger appropriately
-	if function == "queryDCM" {
-		return c.queryDCM(APIstub, args)
-	} else if function == "createDCM" {
-		return c.createDCM(APIstub, args)
-	} else if function == "queryAllDCMs" {
-		return c.queryAllDCMs(APIstub)
-	}
-	return shim.Error("Invalid Smart Contract function name.")
-}
-
-// func (d *Device) queryDevice(APIstub shim.ChaincodeStubInterface, args []string) sc.Response {
-
-// 	if len(args) != 1 {
-// 		return shim.Error("Incorrect number of arguments. Expecting 1")
-// 	}
-
-// 	deviceAsBytes, _ := APIstub.GetState(args[0])
-// 	return shim.Success(deviceAsBytes)
-// }
 
 func (d *DSM) queryDSM(APIstub shim.ChaincodeStubInterface, args []string) sc.Response {
 
@@ -200,87 +128,12 @@ func (d *DCM) queryDCM(APIstub shim.ChaincodeStubInterface, args []string) sc.Re
 	return shim.Success(dcmAsBytes)
 }
 
-/*
-func (d *Device) initLedger(APIstub shim.ChaincodeStubInterface) sc.Response {
-	devices := []Device{
-		Device{
-			SerialNumber: "123456789",
-		},
-		Device{
-			SerialNumber: "987654321",
-		},
-	}
-	i := 0
-	for i < len(devices) {
-		fmt.Println("i is ", i)
-		deviceAsBytes, _ := json.Marshal(devices[i])
-		APIstub.PutState("DEVICE"+strconv.Itoa(i), deviceAsBytes)
-		fmt.Println("Added", devices[i])
-		i = i + 1
-	}
-	return shim.Success(nil)
-}
-
-func (s *DSM) InitLedger(APIstub shim.ChaincodeStubInterface) sc.Response {
-	DSMs := []DSM{
-		DSM{
-			PhysicalArtifact:     "qwerty",
-			URI:                  "http://www.google.com",
-			MACAddress:           "123:456:789",
-			DSD:                  "poiuyt",
-			ConnectionParameters: "lkjhgf",
-		},
-	}
-	j := 0
-	for j < len(DSMs) {
-		fmt.Println("j is ", j)
-		DSMAsBytes, _ := json.Marshal(DSMs[j])
-		APIstub.PutState("DSM"+strconv.Itoa(j), DSMAsBytes)
-		fmt.Println("Added", DSMs[j])
-		j = j + 1
-	}
-	return shim.Success(nil)
-}
-
-func (c *DCM) initLedger(APIstub shim.ChaincodeStubInterface) sc.Response {
-	DCMs := []DCM{
-		DCM{
-			PhysicalArtifact: "zxcvb",
-			URI:              "http://www.eng.it",
-			MACAddress:       "321:654:987",
-			DSDs:             "lkjhg",
-		},
-	}
-	k := 0
-	for k < len(DCMs) {
-		fmt.Println("k is ", k)
-		DCMAsBytes, _ := json.Marshal(DCMs[k])
-		APIstub.PutState("DCM"+strconv.Itoa(k), DCMAsBytes)
-		fmt.Println("Added", DCMs[k])
-		k = k + 1
-	}
-
-	return shim.Success(nil)
-}
-*/
-// func (d *Device) createDevice(APIstub shim.ChaincodeStubInterface, args []string) sc.Response {
-
-// 	if len(args) != 2 {
-// 		return shim.Error("Incorrect number of arguments. Expecting 2")
-// 	}
-
-// 	var device = Device{SerialNumber: args[2]}
-
-// 	deviceAsBytes, _ := json.Marshal(device)
-// 	APIstub.PutState(args[0], deviceAsBytes)
-
-// 	return shim.Success(nil)
-// }
-
 func (s *DSM) createDSM(APIstub shim.ChaincodeStubInterface, args []string) sc.Response {
-
+	fmt.Println("Entering inside createDSM")
 	if len(args) != 6 {
-		return shim.Error("Incorrect number of arguments. Expecting 6")
+		lenght := strconv.Itoa(len(args))
+		str := "Incorrect number of arguments. Expecting 6" + lenght
+		return shim.Error(str)
 	}
 
 	var dsm = DSM{
@@ -289,10 +142,12 @@ func (s *DSM) createDSM(APIstub shim.ChaincodeStubInterface, args []string) sc.R
 		MACAddress:           args[3],
 		DSD:                  args[4],
 		ConnectionParameters: args[5],
+		Type:                 "DSM",
 	}
-
+	// Convert keys to compound key
 	dsmAsBytes, _ := json.Marshal(dsm)
-	APIstub.PutState(args[0], dsmAsBytes)
+	fmt.Println("createDSM PutState", dsmAsBytes)
+	APIstub.PutState(args[1], dsmAsBytes)
 
 	return shim.Success(nil)
 }
@@ -307,7 +162,9 @@ func (c *DCM) createDCM(APIstub shim.ChaincodeStubInterface, args []string) sc.R
 		PhysicalArtifact: args[1],
 		URI:              args[2],
 		MACAddress:       args[3],
-		DSDs:             args[4]}
+		DSDs:             args[4],
+		Type:             "DCM",
+	}
 
 	dcmAsBytes, _ := json.Marshal(dcm)
 	APIstub.PutState(args[0], dcmAsBytes)
@@ -315,114 +172,54 @@ func (c *DCM) createDCM(APIstub shim.ChaincodeStubInterface, args []string) sc.R
 	return shim.Success(nil)
 }
 
-/*
-func (d *Device) queryAllDevices(APIstub shim.ChaincodeStubInterface) sc.Response {
-
-	startKey := "DEV0"
-	endKey := "DEV999"
-
-	resultsIterator, err := APIstub.GetStateByRange(startKey, endKey)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-	defer resultsIterator.Close()
-
-	// buffer is a JSON array containing QueryResults
-	var buffer bytes.Buffer
-	buffer.WriteString("[")
-
-	bArrayMemberAlreadyWritten := false
-	for resultsIterator.HasNext() {
-		queryResponse, err := resultsIterator.Next()
-		if err != nil {
-			return shim.Error(err.Error())
-		}
-		// Add a comma before array members, suppress it for the first array member
-		if bArrayMemberAlreadyWritten == true {
-			buffer.WriteString(",")
-		}
-		buffer.WriteString("{\"Key\":")
-		buffer.WriteString("\"")
-		buffer.WriteString(queryResponse.Key)
-		buffer.WriteString("\"")
-
-		buffer.WriteString(", \"Record\":")
-		// Record is a JSON object, so we write as-is
-		buffer.WriteString(string(queryResponse.Value))
-		buffer.WriteString("}")
-		bArrayMemberAlreadyWritten = true
-	}
-	buffer.WriteString("]")
-
-	fmt.Printf("- queryAllDevices:\n%s\n", buffer.String())
-
-	return shim.Success(buffer.Bytes())
-}
-*/
-
 func (s *DSM) queryAllDSMs(APIstub shim.ChaincodeStubInterface) sc.Response {
-
-	startKey := "DSM0"
-	endKey := "DSM999"
-
-	resultsIterator, err := APIstub.GetStateByRange(startKey, endKey)
-	if err != nil {
-		return shim.Error(err.Error())
+	logger.Error("Entering in queryAllDSMs")
+	queryString :=
+		"{" +
+			"\"selector\": {" +
+			"	\"type\": \"DSM\"" +
+			" }" +
+			" }"
+	buffer, error := getQueryResultForQueryString(APIstub, queryString)
+	if error != nil {
+		fmt.Printf("Error querying all DSM: %s", error)
+		return shim.Error("Error querying all DSM") //TODO Error
 	}
-	defer resultsIterator.Close()
+	return shim.Success(buffer)
 
-	// buffer is a JSON array containing QueryResults
-	var buffer bytes.Buffer
-	buffer.WriteString("[")
-
-	bArrayMemberAlreadyWritten := false
-	for resultsIterator.HasNext() {
-		queryResponse, err := resultsIterator.Next()
-		if err != nil {
-			return shim.Error(err.Error())
-		}
-		// Add a comma before array members, suppress it for the first array member
-		if bArrayMemberAlreadyWritten == true {
-			buffer.WriteString(",")
-		}
-		buffer.WriteString("{\"Key\":")
-		buffer.WriteString("\"")
-		buffer.WriteString(queryResponse.Key)
-		buffer.WriteString("\"")
-
-		buffer.WriteString(", \"Record\":")
-		// Record is a JSON object, so we write as-is
-		buffer.WriteString(string(queryResponse.Value))
-		buffer.WriteString("}")
-		bArrayMemberAlreadyWritten = true
-	}
-	buffer.WriteString("]")
-
-	fmt.Printf("- queryAllDevices:\n%s\n", buffer.String())
-
-	return shim.Success(buffer.Bytes())
 }
 
 func (c *DCM) queryAllDCMs(APIstub shim.ChaincodeStubInterface) sc.Response {
-
-	startKey := "DCM0"
-	endKey := "DCM999"
-
-	resultsIterator, err := APIstub.GetStateByRange(startKey, endKey)
-	if err != nil {
-		return shim.Error(err.Error())
+	queryString :=
+		"{" +
+			"\"selector\": {" +
+			"	\"type\": \"DCM\"" +
+			" }" +
+			" }"
+	buffer, error := getQueryResultForQueryString(APIstub, queryString)
+	if error != nil {
+		fmt.Printf("Error querying all DCM: %s", error)
+		return shim.Error("Error querying all DCM")
 	}
-	defer resultsIterator.Close()
+	return shim.Success(buffer)
+}
 
-	// buffer is a JSON array containing QueryResults
+func getQueryResultForQueryString(stub shim.ChaincodeStubInterface, queryString string) ([]byte, error) {
+	fmt.Printf("- getQueryResultForQueryString queryString:\n%s\n", queryString)
+	resultsIterator, err := stub.GetQueryResult(queryString)
+	defer resultsIterator.Close()
+	if err != nil {
+		return nil, err
+	}
+	// buffer is a JSON array containing QueryRecords
 	var buffer bytes.Buffer
 	buffer.WriteString("[")
-
 	bArrayMemberAlreadyWritten := false
 	for resultsIterator.HasNext() {
-		queryResponse, err := resultsIterator.Next()
+		queryResponse,
+			err := resultsIterator.Next()
 		if err != nil {
-			return shim.Error(err.Error())
+			return nil, err
 		}
 		// Add a comma before array members, suppress it for the first array member
 		if bArrayMemberAlreadyWritten == true {
@@ -432,7 +229,6 @@ func (c *DCM) queryAllDCMs(APIstub shim.ChaincodeStubInterface) sc.Response {
 		buffer.WriteString("\"")
 		buffer.WriteString(queryResponse.Key)
 		buffer.WriteString("\"")
-
 		buffer.WriteString(", \"Record\":")
 		// Record is a JSON object, so we write as-is
 		buffer.WriteString(string(queryResponse.Value))
@@ -440,41 +236,33 @@ func (c *DCM) queryAllDCMs(APIstub shim.ChaincodeStubInterface) sc.Response {
 		bArrayMemberAlreadyWritten = true
 	}
 	buffer.WriteString("]")
-
-	fmt.Printf("- queryAllDevices:\n%s\n", buffer.String())
-
-	return shim.Success(buffer.Bytes())
+	fmt.Printf("- getQueryResultForQueryString queryResult:\n%s\n", buffer.String())
+	return buffer.Bytes(), nil
 }
 
-/*func (s *SmartContract) changeCarOwner(APIstub shim.ChaincodeStubInterface, args []string) sc.Response {
+func (s *DSM) Invoke(stub shim.ChaincodeStubInterface) sc.Response {
+	function, args := stub.GetFunctionAndParameters()
+	if function == "qGetAllDSMs" {
+		return s.queryAllDSMs(stub)
+	} else if function == "iCreateDSM" {
+		return s.createDSM(stub, args)
+	}
+	return shim.Success(nil)
+}
 
-	 if len(args) != 2 {
-		 return shim.Error("Incorrect number of arguments. Expecting 2")
-	 }
-
-	 carAsBytes, _ := APIstub.GetState(args[0])
-	 car := Car{}
-
-	 json.Unmarshal(carAsBytes, &car)
-	 car.Owner = args[1]
-
-	 carAsBytes, _ = json.Marshal(car)
-	 APIstub.PutState(args[0], carAsBytes)
-
-	 return shim.Success(nil)
- }
-*/
-// The main function is only relevant in unit test mode. Only included here for completeness.
 func main() {
 	fmt.Printf("Main Function")
+	logger.SetLevel(shim.LogInfo)
+	logLevel, _ := shim.LogLevel(os.Getenv("SHIM_LOGGING_LEVEL"))
+	shim.SetLoggingLevel(logLevel)
 	// Create a new Smart Contract
 	err := shim.Start(new(DSM))
 	if err != nil {
 		fmt.Printf("Error creating new DSM: %s", err)
 	}
-	err2 := shim.Start(new(DCM))
-	if err2 != nil {
-		fmt.Printf("Error creating new DCM: %s", err2)
-	}
+	//	err2 := shim.Start(new(DCM))
+	//	if err2 != nil {
+	//		fmt.Printf("Error creating new DCM: %s", err2)
+	//	}
 
 }
