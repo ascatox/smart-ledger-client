@@ -1,6 +1,7 @@
 package eu.faredge.smartledger.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.faredge.smartledger.client.base.ISmartLedgerClient;
 import eu.faredge.smartledger.client.helper.SmartLedgerClientHelper;
 import eu.faredge.smartledger.client.model.DCM;
 import eu.faredge.smartledger.client.model.DSM;
@@ -11,8 +12,9 @@ import org.hyperledger.fabric.sdk.Channel;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-public class SmartLedgerClient implements eu.faredge.smartledger.client.base.SmartLedgerClient {
+public class SmartLedgerClient implements ISmartLedgerClient {
 
+    public static final int TIMEOUT = 360;
     private SmartLedgerClientHelper helper;
     private Channel channel;
 
@@ -29,59 +31,84 @@ public class SmartLedgerClient implements eu.faredge.smartledger.client.base.Sma
     }
 
     @Override
-    public String register(DSM dsm) throws Exception {
-        ObjectMapper mapper = new ObjectMapper();
-        String json = mapper.writeValueAsString(dsm);
-        String[] args = {"iCreateDSM", dsm.getPhysicalArtifact(), dsm.getUri(), dsm.getMacAddress(), dsm.getDsd(), dsm
-                .getConnectionParameters()};
-        if (SmartLedgerClientHelper.invokeChaincode(channel,
-                "", args).isDone())
-            channel.shutdown(false);
-        return null;
-    }
-
-    public void installChaincode(boolean instantiate) throws Exception {
+    public void installChaincode(boolean instantiate, boolean upgrade) throws Exception {
         SmartLedgerClientHelper.installChaincode(channel);
         Util.out("Chaincode installed correctly!!!");
         if (instantiate) {
-            instantiateChaincode();
+            instantiateOrUpgradeChaincode(upgrade);
         }
     }
 
-    public void instantiateChaincode() throws Exception {
+    @Override
+    public void instantiateOrUpgradeChaincode(boolean isUpgrade) throws Exception {
         String[] args = {};
         CompletableFuture<BlockEvent.TransactionEvent> transactionEventCompletableFuture = SmartLedgerClientHelper
-                .instantiateChaincode(channel, args);
-        if (transactionEventCompletableFuture.isDone())
-            Util.out("Chaincode instantiated correctly!!!");
-    }
+                .instantiateOrUpgradeChaincode(channel, args, isUpgrade);
+        BlockEvent.TransactionEvent event = null;
+        transactionEventCompletableFuture.complete(null);
+        if (isUpgrade)
+            Util.out("Chaincode upgraded correctly :-)");
+        else
+            Util.out("Chaincode instantiated correctly :-)");
 
-    @Override
-    public String register(DCM dcm) throws Exception {
-        return null;
     }
 
     @Override
     public DSM getDataSourceManifest(String id) throws Exception {
-        return null;
+        String[] args = {id};
+        final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, "qGetDSMByUri", args);
+        Util.out("Query Chaincode successful!!!Data retrieved: ");
+        //TODO
+        return Util.extractDSMFromPayloads(payloads).get(0);
     }
 
     @Override
     public DCM getDataConsumerManifest(String id) {
-        return null;
+        String[] args = {id};
+        final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, "qGetDCMByUri", args);
+        Util.out("Query Chaincode successful!!!Data retrieved: ");
+        //TODO
+        return Util.extractDCMFromPayloads(payloads).get(0);
     }
 
 
     @Override
-    public List<String[]> getAllDataSourceManifests() throws Exception {
-        return doGetAllDataSourceManifests();
+    public List<DSM> getAllDataSourceManifests() throws Exception {
+        String[] args = {};
+        final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, "qGetAllDSMs", args);
+        Util.out("Query Chaincode successful!!!Data retrieved: ");
+        return Util.extractDSMFromPayloads(payloads);
     }
 
-    private List<String[]> doGetAllDataSourceManifests() {
-        String[] args = {"qGetAllDSMs"};
-        final List<String[]> values = SmartLedgerClientHelper.queryChainCode(channel, "", args);
-        Util.out("Query Chaincode successful!!!Data retrieved", values.toString());
-        //TODO JSON Unmarshall to have a list of DSM objects!!!
-        return values;
+    @Override
+    public List<DCM> getAllDataConsumerManifests() throws Exception {
+        String[] args = {};
+        final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, "qGetAllDCMs", args);
+        Util.out("Query Chaincode successful!!!Data retrieved: ");
+        return Util.extractDCMFromPayloads(payloads);
     }
+
+    @Override
+    public void registerDSM(DSM dsm) throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        String json = mapper.writeValueAsString(dsm);
+        String[] args = {dsm.getPhysicalArtifact(), dsm.getUri(), dsm.getMacAddress(), dsm.getDsd(), dsm
+                .getConnectionParameters()};
+        BlockEvent.TransactionEvent event = null;
+        SmartLedgerClientHelper.invokeChaincode(channel,
+                "iCreateDSM", args).complete(null);
+    }
+
+    @Override
+    public void registerDCM(DCM dcm) throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        String json = mapper.writeValueAsString(dcm);
+        String[] args = {dcm.getPhysicalArtifact(), dcm.getUri(), dcm.getMacAddress(), dcm.getDsds()};
+        BlockEvent.TransactionEvent event = null;
+        SmartLedgerClientHelper.invokeChaincode(channel,
+                "iCreateDCM", args).complete(null);
+    }
+
+
+
 }

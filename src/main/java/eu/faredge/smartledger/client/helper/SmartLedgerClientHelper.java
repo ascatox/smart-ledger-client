@@ -6,9 +6,13 @@ import eu.faredge.smartledger.client.model.SampleUser;
 import eu.faredge.smartledger.client.testutils.TestConfig;
 import eu.faredge.smartledger.client.util.Util;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.StringUtils;
 import org.hyperledger.fabric.protos.ledger.rwset.kvrwset.KvRwset;
 import org.hyperledger.fabric.sdk.*;
-import org.hyperledger.fabric.sdk.exception.*;
+import org.hyperledger.fabric.sdk.exception.ChaincodeEndorsementPolicyParseException;
+import org.hyperledger.fabric.sdk.exception.InvalidArgumentException;
+import org.hyperledger.fabric.sdk.exception.InvalidProtocolBufferRuntimeException;
+import org.hyperledger.fabric.sdk.exception.ProposalException;
 import org.hyperledger.fabric.sdk.security.CryptoSuite;
 import org.hyperledger.fabric_ca.sdk.HFCAClient;
 
@@ -18,7 +22,6 @@ import java.net.MalformedURLException;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -27,7 +30,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hyperledger.fabric.sdk.BlockInfo.EnvelopeType.TRANSACTION_ENVELOPE;
 
 public class SmartLedgerClientHelper {
-    public static final String INVOKE = "invoke";
     private static ResourceBundle finder = ResourceBundle.getBundle("smart-ledger");
     private static final TestConfig testConfig = TestConfig.getConfig();
     private static final String TEST_ADMIN_NAME = finder.getString("TEST_ADMIN_NAME");
@@ -68,7 +70,7 @@ public class SmartLedgerClientHelper {
     public static void checkConfig() throws NoSuchFieldException, SecurityException, IllegalArgumentException,
             IllegalAccessException, MalformedURLException, org.hyperledger
                     .fabric_ca.sdk.exception.InvalidArgumentException {
-        Util.out("\n\n\nRUNNING: SmartLedgerClient.\n");
+        Util.out("\n\n\nRUNNING: ISmartLedgerClient.\n");
 
         chaincodeID = ChaincodeID.newBuilder().setName(CHAIN_CODE_NAME)
                 .setVersion(CHAIN_CODE_VERSION)
@@ -88,6 +90,7 @@ public class SmartLedgerClientHelper {
             }
         }
     }
+
     public static void setup() {
         try {
 
@@ -160,7 +163,6 @@ public class SmartLedgerClientHelper {
                                         sampleOrgDomainName)).toFile());
 
                 sampleOrg.setPeerAdmin(peerOrgAdmin); //A special user that can create channels, join peers and
-                // install chaincode
             }
             sampleOrg = testConfig.getIntegrationTestsSampleOrg("peerOrg1"); //TODO
         } catch (Exception e) {
@@ -168,79 +170,6 @@ public class SmartLedgerClientHelper {
             Util.fail(e.getMessage());
         }
     }
-
-//    private static void runChannel(HFClient client, Channel channel, boolean installChaincode, boolean
-// instantiateChaincode, SampleOrg sampleOrg, int delta) {
-//
-//        try {
-//            Collection<ProposalResponse> successful = new LinkedList<>();
-//            Collection<ProposalResponse> failed = new LinkedList<>();
-//            installChaincode(client, channel, sampleOrg, successful, failed);
-//            instantiateChaincode(client, channel, new String[]{}, successful, failed, true, orderers).thenApply
-// (transactionEvent ->
-//            {
-//                waitOnFabric(0);
-//                Util.out("Finished instantiate transaction with transaction id %s", transactionEvent
-// .getTransactionID());
-//                return invokeChaincode(client, channel, sampleOrg, successful, failed);
-//            }).thenApply(transactionEvent -> {
-//                //return queryChainCode(client, channel, "invoke", chaincodeID, transactionEvent);
-//                return null;
-//            }).exceptionally(e -> {
-//                if (e instanceof TransactionEventException) {
-//                    BlockEvent.TransactionEvent te = ((TransactionEventException) e).getTransactionEvent();
-//                    if (te != null) {
-//                        Util.fail(format("Transaction with txid %s failed. %s", te.getTransactionID(), e.getMessage
-// ()));
-//                    }
-//                }
-//                Util.fail(format("Test failed with %s exception %s", e.getClass().getName(), e.getMessage()));
-//
-//                return null;
-//            }).get(testConfig.getTransactionWaitTime(), TimeUnit.SECONDS);
-//
-//            // Channel queries
-//            // We can only send channel queries to peers that are in the same org as the SDK user context
-//            // Get the peers from the current org being used and pick one randomly to send the queries to.
-//            Set<Peer> peerSet = sampleOrg.getPeers();
-//            //  Peer queryPeer = peerSet.iterator().next();
-//            //   out("Using peer %s for channel queries", queryPeer.getName());
-//
-//            BlockchainInfo channelInfo = channel.queryBlockchainInfo();
-//            Util.out("Channel info for : " + channel.getName());
-//            Util.out("Channel height: " + channelInfo.getHeight());
-//            String chainCurrentHash = Hex.encodeHexString(channelInfo.getCurrentBlockHash());
-//            String chainPreviousHash = Hex.encodeHexString(channelInfo.getPreviousBlockHash());
-//            Util.out("Chain current block hash: " + chainCurrentHash);
-//            Util.out("Chainl previous block hash: " + chainPreviousHash);
-//
-//            // Query by block number. Should return latest block, i.e. block number 2
-//            BlockInfo returnedBlock = channel.queryBlockByNumber(channelInfo.getHeight() - 1);
-//            String previousHash = Hex.encodeHexString(returnedBlock.getPreviousHash());
-//            Util.out("queryBlockByNumber returned correct block with blockNumber " + returnedBlock.getBlockNumber()
-//                    + " \n previous_hash " + previousHash);
-//
-//            // Query by block hash. Using latest block's previous hash so should return block number 1
-//            byte[] hashQuery = returnedBlock.getPreviousHash();
-//            returnedBlock = channel.queryBlockByHash(hashQuery);
-//            Util.out("queryBlockByHash returned block with blockNumber " + returnedBlock.getBlockNumber());
-//
-//            // Query block by TxID. Since it's the last TxID, should be block 2
-//            returnedBlock = channel.queryBlockByTransactionID(testTxID);
-//            Util.out("queryBlockByTxID returned block with blockNumber " + returnedBlock.getBlockNumber());
-//
-//            // query transaction by ID
-//            TransactionInfo txInfo = channel.queryTransactionByID(testTxID);
-//            Util.out("QueryTransactionByID returned TransactionInfo: txID " + txInfo.getTransactionID()
-//                    + "\n     validation code " + txInfo.getValidationCode().getNumber());
-//            Util.out("Running for Channel %s done", channel.getName());
-//
-//        } catch (Exception e) {
-//            Util.out("Caught an exception running channel %s", channel.getName());
-//            e.printStackTrace();
-//            Util.fail("Test failed with error : " + e.getMessage());
-//        }
-//    }
 
     public static List<String[]> queryChainCode(Channel channel, String functionName, String[] args) {
         return queryChainCode(client, channel, functionName, null, args);
@@ -257,11 +186,10 @@ public class SmartLedgerClientHelper {
             ////////////////////////////
             // Send Query Proposal to all peers
             //
-            String expect = "" + (300 + DELTA);
-            Util.out("Now query chaincode for the value of b.");
+            Util.out("Now query chaincode for the values rquired.");
             QueryByChaincodeRequest queryByChaincodeRequest = client.newQueryProposalRequest();
             queryByChaincodeRequest.setArgs(args);
-            queryByChaincodeRequest.setFcn(INVOKE);
+            queryByChaincodeRequest.setFcn(functionName);
             queryByChaincodeRequest.setChaincodeID(chaincodeID);
 
             Map<String, byte[]> tm2 = new HashMap<>();
@@ -284,7 +212,7 @@ public class SmartLedgerClientHelper {
                     payloads.add(returnPayload);
                 } else {
                     String payload = proposalResponse.getProposalResponse().getResponse().getPayload().toStringUtf8();
-                    Util.out("Query payload of b from peer %s returned %s", proposalResponse.getPeer().getName(),
+                    Util.out("Query payload from peer %s returned %s", proposalResponse.getPeer().getName(),
                             payload);
                     String[] returnPayload = new String[2];
                     returnPayload[0] = proposalResponse.getPeer().getName();
@@ -302,14 +230,14 @@ public class SmartLedgerClientHelper {
     }
 
     public static CompletableFuture<BlockEvent.TransactionEvent> invokeChaincode(Channel channel, String
-            function, String[] args)
+            functionName, String[] args)
             throws Exception {
-        return invokeChaincode(client, channel, chaincodeID,function, args, peerOrgAdmin);
+        return invokeChaincode(client, channel, chaincodeID, functionName, args, peerOrgAdmin);
     }
 
     private static CompletableFuture<BlockEvent.TransactionEvent> invokeChaincode(HFClient client, Channel channel,
                                                                                   ChaincodeID chaincodeID,
-                                                                                  String fcn, String[]
+                                                                                  String functionName, String[]
                                                                                           args, User user) throws
             Exception {
         Collection<ProposalResponse> successful = new LinkedList<>();
@@ -319,13 +247,13 @@ public class SmartLedgerClientHelper {
         /// Send transaction proposal to all peers
         TransactionProposalRequest transactionProposalRequest = client.newTransactionProposalRequest();
         transactionProposalRequest.setChaincodeID(chaincodeID);
-        transactionProposalRequest.setFcn(INVOKE);
-        transactionProposalRequest.setArgs(args);  //new String[]{"move", "a", "b", moveAmount}
+        transactionProposalRequest.setFcn(functionName);
+        transactionProposalRequest.setArgs(args);
         transactionProposalRequest.setProposalWaitTime(testConfig.getProposalWaitTime());
         if (user != null) { // specific user use that
             transactionProposalRequest.setUserContext(user);
         }
-        Util.out("sending transaction proposal to all peers with arguments: (", args.toString() +"\"");
+        Util.out("sending transaction proposal to all peers with arguments: (" + StringUtils.join(args, ",") + "\"");
 
 
         Collection<ProposalResponse> invokePropResp = channel.sendTransactionProposal(transactionProposalRequest);
@@ -344,7 +272,9 @@ public class SmartLedgerClientHelper {
         if (failed.size() > 0) {
             ProposalResponse firstTransactionProposalResponse = failed.iterator().next();
 
-            throw new ProposalException(format("Not enough endorsers for invoke(" + args.toString() + "):%d endorser " +
+            throw new ProposalException(format("Not enough endorsers for invoke(" + StringUtils.join(args, ",") + ")" +
+                            ":%d " +
+                            "endorser " +
                             "error:%s. Was verified:%b",
                     args[args.length - 1], firstTransactionProposalResponse.getStatus().getStatus(),
                     firstTransactionProposalResponse.getMessage(),
@@ -354,7 +284,7 @@ public class SmartLedgerClientHelper {
 
         ////////////////////////////
         // Send transaction to orderer
-        Util.out("Sending chaincode transaction "+fcn+" to orderer.", args.toString());
+        Util.out("Sending chaincode transaction " + functionName + " to orderer.");
         if (user != null) {
             return channel.sendTransaction(successful, user);
         }
@@ -393,15 +323,6 @@ public class SmartLedgerClientHelper {
         //Just pick the first orderer in the list to create the channel.
 
         Orderer anOrderer = orderers.iterator().next();
-        //orderers.remove(anOrderer);
-
-        // ChannelConfiguration channelConfiguration = new ChannelConfiguration(new File(TEST_FIXTURES_PATH +
-        // "/sdkintegration/e2e-2Orgs/channel/" + name + ".tx"));
-
-        //Create channel that has only one signer that is this orgs peer admin. If channel creation policy needed
-        // more signature they would need to be added too.
-        //Channel newChannel = client.newChannel(name, anOrderer, channelConfiguration, client
-        // .getChannelConfigurationSignature(channelConfiguration, sampleOrg.getPeerAdmin()));
         Channel newChannel = client.getChannel(name);
         if (null == newChannel) {
             // @ascatox Constructs a new channel
@@ -430,7 +351,7 @@ public class SmartLedgerClientHelper {
         for (Orderer orderer : orderers) { //add remaining orderers if any.
             newChannel.addOrderer(orderer);
         }
-        for (String eventHubName : sampleOrg.getEventHubNames()) {
+      for (String eventHubName : sampleOrg.getEventHubNames()) {
 
             final Properties eventHubProperties = testConfig.getEventHubProperties(eventHubName);
 
@@ -684,17 +605,21 @@ public class SmartLedgerClientHelper {
             ProposalResponse first = failed.iterator().next();
             Util.fail("Not enough endorsers for install :" + successful.size() + ".  " + first.getMessage());
         }
+    }
 
-        //   client.setUserContext(sampleOrg.getUser(TEST_ADMIN_NAME));
-        //  final ChaincodeID chaincodeID = firstInstallProposalResponse.getChaincodeID();
-        // Note installing chaincode does not require transaction no need to
-        // send to Orderers
 
+    public static CompletableFuture<BlockEvent.TransactionEvent> instantiateOrUpgradeChaincode(Channel channel,
+                                                                                               String[] args, boolean
+                                                                                                       isUpgrade)
+            throws Exception {
+        if (isUpgrade)
+            return upgradeChaincode(channel, args);
+        else
+            return instantiateChaincode(channel, args);
     }
 
     public static CompletableFuture<BlockEvent.TransactionEvent> instantiateChaincode(Channel channel, String[] args)
-            throws InvalidArgumentException, ProposalException,
-            ChaincodeEndorsementPolicyParseException, IOException, ExecutionException, InterruptedException {
+            throws Exception {
         Collection<ProposalResponse> successful = new ArrayList<>();
         Collection<ProposalResponse> failed = new ArrayList<>();
         return instantiateChaincode(client, channel, args, successful, failed, true, orderers);
@@ -715,24 +640,22 @@ public class SmartLedgerClientHelper {
         InstantiateProposalRequest instantiateProposalRequest = client.newInstantiationProposalRequest();
         instantiateProposalRequest.setProposalWaitTime(testConfig.getProposalWaitTime());
         instantiateProposalRequest.setChaincodeID(chaincodeID);
-        instantiateProposalRequest.setFcn("init");
-        //instantiateProposalRequest.setArgs(new String[]{"a", "500", "b", "" + (200 + DELTA)});
+        String function = "init";
+        instantiateProposalRequest.setFcn(function);
         instantiateProposalRequest.setArgs(args);
         Map<String, byte[]> tm = new HashMap<>();
         tm.put("HyperLedgerFabric", "InstantiateProposalRequest:JavaSDK".getBytes(UTF_8));
         tm.put("method", "InstantiateProposalRequest".getBytes(UTF_8));
         instantiateProposalRequest.setTransientMap(tm);
 
-    /*
-      policy OR(Org1MSP.member, Org2MSP.member) meaning 1 signature from someone in either Org1 or Org2
-      See README.md Chaincode endorsement policies section for more details.
-    */
         ChaincodeEndorsementPolicy chaincodeEndorsementPolicy = new ChaincodeEndorsementPolicy();
         chaincodeEndorsementPolicy.fromYamlFile(new File(TEST_FIXTURES_PATH +
                 "/sdkintegration/chaincodeendorsementpolicy.yaml"));
         instantiateProposalRequest.setChaincodeEndorsementPolicy(chaincodeEndorsementPolicy);
 
-        Util.out("Sending instantiateProposalRequest to all peers with arguments: " + args.toString() + " %s " +
+        Util.out("Sending instantiateProposalRequest to all peers with arguments: " + StringUtils.join(args, ",") +
+                " %s" +
+                " " +
                 "respectively", "" + (200 + DELTA));
         successful.clear();
         failed.clear();
@@ -745,7 +668,7 @@ public class SmartLedgerClientHelper {
         for (ProposalResponse response : responses) {
             if (response.isVerified() && response.getStatus() == ProposalResponse.Status.SUCCESS) {
                 successful.add(response);
-                Util.out("Succesful instantiate proposal response Txid: %s from peer %s", response.getTransactionID()
+                Util.out("Successful instantiate proposal response Txid: %s from peer %s", response.getTransactionID()
                         , response.getPeer().getName());
             } else {
                 failed.add(response);
@@ -760,6 +683,74 @@ public class SmartLedgerClientHelper {
         ///////////////
         /// Send instantiate transaction to orderer
         Util.out("Sending instantiateTransaction to orderer %s respectively", "" + (200 + DELTA));
+        return channel.sendTransaction(successful, orderers);
+    }
+
+
+    public static CompletableFuture<BlockEvent.TransactionEvent> upgradeChaincode(Channel channel, String[] args
+    )
+            throws Exception {
+        Collection<ProposalResponse> successful = new ArrayList<>();
+        Collection<ProposalResponse> failed = new ArrayList<>();
+        return upgradeChaincode(client, channel, args, successful, failed, true, orderers);
+    }
+
+    private static CompletableFuture<BlockEvent.TransactionEvent> upgradeChaincode(HFClient client, Channel
+            channel, String[] args,
+                                                                                   Collection<ProposalResponse>
+                                                                                           successful,
+                                                                                   Collection<ProposalResponse>
+                                                                                           failed, boolean
+                                                                                           isFooChain,
+                                                                                   Collection<Orderer> orderers)
+            throws Exception {
+        Collection<ProposalResponse> responses;
+        //// Upgrade chaincode.
+        UpgradeProposalRequest upgradeProposalRequest = client.newUpgradeProposalRequest();
+        upgradeProposalRequest.setProposalWaitTime(testConfig.getProposalWaitTime());
+        upgradeProposalRequest.setChaincodeID(chaincodeID);
+        String function = "init";
+        upgradeProposalRequest.setFcn(function);
+        upgradeProposalRequest.setArgs(args);
+        Map<String, byte[]> tm = new HashMap<>();
+        tm.put("HyperLedgerFabric", "UpgradeProposalRequest:JavaSDK".getBytes(UTF_8));
+        tm.put("method", "UpgradeProposalRequest".getBytes(UTF_8));
+        upgradeProposalRequest.setTransientMap(tm);
+
+        ChaincodeEndorsementPolicy chaincodeEndorsementPolicy = new ChaincodeEndorsementPolicy();
+        chaincodeEndorsementPolicy.fromYamlFile(new File(TEST_FIXTURES_PATH +
+                "/sdkintegration/chaincodeendorsementpolicy.yaml"));
+        upgradeProposalRequest.setChaincodeEndorsementPolicy(chaincodeEndorsementPolicy);
+
+        Util.out("Sending upgradeProposalRequest to all peers with arguments: " + StringUtils.join(args, ",") + " %s" +
+                " " +
+                "respectively", "" + (200 + DELTA));
+        successful.clear();
+        failed.clear();
+
+        if (isFooChain) {  //Send responses both ways with specifying peers and by using those on the channel.
+            responses = channel.sendUpgradeProposal(upgradeProposalRequest, channel.getPeers());
+        } else {
+            responses = channel.sendUpgradeProposal(upgradeProposalRequest);
+        }
+        for (ProposalResponse response : responses) {
+            if (response.isVerified() && response.getStatus() == ProposalResponse.Status.SUCCESS) {
+                successful.add(response);
+                Util.out("Successful upgrade proposal response Txid: %s from peer %s", response.getTransactionID()
+                        , response.getPeer().getName());
+            } else {
+                failed.add(response);
+            }
+        }
+        Util.out("Received %d upgrade proposal responses. Successful+verified: %d . Failed: %d", responses.size()
+                , successful.size(), failed.size());
+        if (failed.size() > 0) {
+            ProposalResponse first = failed.iterator().next();
+            Util.fail(first.getMessage() + ". Was verified:" + first.isVerified());
+        }
+        ///////////////
+        /// Send upgrade transaction to orderer
+        Util.out("Sending upgradeTransaction to orderer %s respectively", "" + (200 + DELTA));
         return channel.sendTransaction(successful, orderers);
     }
 

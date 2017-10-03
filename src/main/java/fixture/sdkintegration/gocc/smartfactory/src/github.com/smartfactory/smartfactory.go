@@ -34,6 +34,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	sc "github.com/hyperledger/fabric/protos/peer"
@@ -123,28 +124,29 @@ func (d *DCM) queryDCM(APIstub shim.ChaincodeStubInterface, args []string) sc.Re
 	if len(args) != 1 {
 		return shim.Error("Incorrect number of arguments. Expecting 1")
 	}
-
 	dcmAsBytes, _ := APIstub.GetState(args[0])
 	return shim.Success(dcmAsBytes)
 }
 
 func (s *DSM) createDSM(APIstub shim.ChaincodeStubInterface, args []string) sc.Response {
 	fmt.Println("Entering inside createDSM")
-	if len(args) != 6 {
+
+	if len(args) != 5 {
 		lenght := strconv.Itoa(len(args))
-		str := "Incorrect number of arguments. Expecting 6" + lenght
+		str := "Incorrect number of arguments. Expecting 5!" + "received: " + lenght
 		return shim.Error(str)
 	}
 
-	var dsm = DSM{
-		PhysicalArtifact:     args[1],
-		URI:                  args[2],
-		MACAddress:           args[3],
-		DSD:                  args[4],
-		ConnectionParameters: args[5],
+	dsm := DSM{
+		PhysicalArtifact:     args[0],
+		URI:                  args[1],
+		MACAddress:           args[2],
+		DSD:                  args[3],
+		ConnectionParameters: args[4],
 		Type:                 "DSM",
 	}
-	// Convert keys to compound key
+	// Convert keys to compound ke
+
 	dsmAsBytes, _ := json.Marshal(dsm)
 	fmt.Println("createDSM PutState", dsmAsBytes)
 	APIstub.PutState(args[1], dsmAsBytes)
@@ -158,8 +160,8 @@ func (c *DCM) createDCM(APIstub shim.ChaincodeStubInterface, args []string) sc.R
 		return shim.Error("Incorrect number of arguments. Expecting 5")
 	}
 
-	var dcm = DCM{
-		PhysicalArtifact: args[1],
+	dcm := DCM{
+		PhysicalArtifact: args[0],
 		URI:              args[2],
 		MACAddress:       args[3],
 		DSDs:             args[4],
@@ -173,7 +175,7 @@ func (c *DCM) createDCM(APIstub shim.ChaincodeStubInterface, args []string) sc.R
 }
 
 func (s *DSM) queryAllDSMs(APIstub shim.ChaincodeStubInterface) sc.Response {
-	logger.Error("Entering in queryAllDSMs")
+	fmt.Println("Entering inside queryAllDSMs")
 	queryString :=
 		"{" +
 			"\"selector\": {" +
@@ -186,7 +188,73 @@ func (s *DSM) queryAllDSMs(APIstub shim.ChaincodeStubInterface) sc.Response {
 		return shim.Error("Error querying all DSM") //TODO Error
 	}
 	return shim.Success(buffer)
+}
 
+func (s *DSM) querDSMByUri(APIstub shim.ChaincodeStubInterface, uri string) sc.Response {
+	fmt.Println("Entering inside querDSMByUri")
+	//	logger.Info("Entering in queryDSMByUri")
+	if (len(strings.TrimSpace(uri))) == 0 {
+		return shim.Error("Incorrect number of arguments. Expecting uri")
+	}
+	queryString :=
+		"{" +
+			"\"selector\": {" +
+			"	\"type\": \"DSM\"" +
+			" }," +
+			" \"uri\": {" +
+			" \"$eq\":" + uri +
+			" } " +
+			" }"
+	buffer, error := getQueryResultForQueryString(APIstub, queryString)
+	if error != nil {
+		fmt.Printf("Error querying DSM by Uri: %s", error)
+		return shim.Error("Error querying DSM by Uri " + uri) //TODO Error
+	}
+	return shim.Success(buffer)
+}
+
+func (s *DSM) querDSMByMacAdd(APIstub shim.ChaincodeStubInterface, macAdd string) sc.Response {
+	//	logger.Info("Entering in queryDSMByMacAdd")
+	if (len(strings.TrimSpace(macAdd))) == 0 {
+		return shim.Error("Incorrect number of arguments. Expecting MACAddress")
+	}
+	queryString :=
+		"{" +
+			"\"selector\": {" +
+			"	\"type\": \"DSM\"" +
+			" }," +
+			" \"macAddress\": {" +
+			" \"$eq\":" + macAdd +
+			" } " +
+			" }"
+	buffer, error := getQueryResultForQueryString(APIstub, queryString)
+	if error != nil {
+		fmt.Printf("Error querying DSM by MACAddress: %s", error)
+		return shim.Error("Error querying DSM by MACAddress " + macAdd) //TODO Error
+	}
+	return shim.Success(buffer)
+}
+
+func (s *DSM) querDSMByPhyArt(APIstub shim.ChaincodeStubInterface, phyArt string) sc.Response {
+	//	logger.Info("Entering in queryDSMByPhyArt")
+	if (len(strings.TrimSpace(phyArt))) == 0 {
+		return shim.Error("Incorrect number of arguments. Expecting PhysicalArtifact")
+	}
+	queryString :=
+		"{" +
+			"\"selector\": {" +
+			"	\"type\": \"DSM\"" +
+			" }," +
+			" \"physicalArtifact\": {" +
+			" \"$eq\":" + phyArt +
+			" } " +
+			" }"
+	buffer, error := getQueryResultForQueryString(APIstub, queryString)
+	if error != nil {
+		fmt.Printf("Error querying DSM by PhysicalArtifact: %s", error)
+		return shim.Error("Error querying DSM by PhysicalArtifact " + phyArt) //TODO Error
+	}
+	return shim.Success(buffer)
 }
 
 func (c *DCM) queryAllDCMs(APIstub shim.ChaincodeStubInterface) sc.Response {
@@ -200,6 +268,72 @@ func (c *DCM) queryAllDCMs(APIstub shim.ChaincodeStubInterface) sc.Response {
 	if error != nil {
 		fmt.Printf("Error querying all DCM: %s", error)
 		return shim.Error("Error querying all DCM")
+	}
+	return shim.Success(buffer)
+}
+
+func (c *DCM) querDCMByUri(APIstub shim.ChaincodeStubInterface, uri string) sc.Response {
+	//	logger.Info("Entering in queryDCMByUri")
+	if (len(strings.TrimSpace(uri))) == 0 {
+		return shim.Error("Incorrect number of arguments. Expecting uri")
+	}
+	queryString :=
+		"{" +
+			"\"selector\": {" +
+			"	\"type\": \"DCM\"" +
+			" }," +
+			" \"uri\": {" +
+			" \"$eq\":" + uri +
+			" } " +
+			" }"
+	buffer, error := getQueryResultForQueryString(APIstub, queryString)
+	if error != nil {
+		fmt.Printf("Error querying DCM by Uri: %c", error)
+		return shim.Error("Error querying DCM by Uri " + uri) //TODO Error
+	}
+	return shim.Success(buffer)
+}
+
+func (c *DCM) querDCMByMacAdd(APIstub shim.ChaincodeStubInterface, macAdd string) sc.Response {
+	//	logger.Info("Entering in queryDCMByMacAdd")
+	if (len(strings.TrimSpace(macAdd))) == 0 {
+		return shim.Error("Incorrect number of arguments. Expecting MACAddress")
+	}
+	queryString :=
+		"{" +
+			"\"selector\": {" +
+			"	\"type\": \"DCM\"" +
+			" }," +
+			" \"macAddress\": {" +
+			" \"$eq\":" + macAdd +
+			" } " +
+			" }"
+	buffer, error := getQueryResultForQueryString(APIstub, queryString)
+	if error != nil {
+		fmt.Printf("Error querying DCM by MACAddress: %c", error)
+		return shim.Error("Error querying DCM by MACAddress " + macAdd) //TODO Error
+	}
+	return shim.Success(buffer)
+}
+
+func (c *DCM) querDCMByPhyArt(APIstub shim.ChaincodeStubInterface, phyArt string) sc.Response {
+	//	logger.Info("Entering in queryDCMByPhyArt")
+	if (len(strings.TrimSpace(phyArt))) == 0 {
+		return shim.Error("Incorrect number of arguments. Expecting PhysicalArtifact")
+	}
+	queryString :=
+		"{" +
+			"\"selector\": {" +
+			"	\"type\": \"DCM\"" +
+			" }," +
+			" \"physicalArtifact\": {" +
+			" \"$eq\":" + phyArt +
+			" } " +
+			" }"
+	buffer, error := getQueryResultForQueryString(APIstub, queryString)
+	if error != nil {
+		fmt.Printf("Error querying DCM by PhysicalArtifact: %c", error)
+		return shim.Error("Error querying DCM by PhysicalArtifact " + phyArt) //TODO Error
 	}
 	return shim.Success(buffer)
 }
@@ -243,9 +377,14 @@ func getQueryResultForQueryString(stub shim.ChaincodeStubInterface, queryString 
 func (s *DSM) Invoke(stub shim.ChaincodeStubInterface) sc.Response {
 	function, args := stub.GetFunctionAndParameters()
 	if function == "qGetAllDSMs" {
+		fmt.Printf("CALL queryAllDSMs")
 		return s.queryAllDSMs(stub)
 	} else if function == "iCreateDSM" {
+		fmt.Printf("CALL createDSM")
 		return s.createDSM(stub, args)
+	} else if function == "qGetDSMByUri" {
+		fmt.Printf("CALL querDSMByUri")
+		return s.querDSMByUri(stub, args[1])
 	}
 	return shim.Success(nil)
 }
@@ -260,6 +399,7 @@ func main() {
 	if err != nil {
 		fmt.Printf("Error creating new DSM: %s", err)
 	}
+	// DECOMMENTARE SOLO DOPO AVER FATTO INVOKE DCM!!!!!
 	//	err2 := shim.Start(new(DCM))
 	//	if err2 != nil {
 	//		fmt.Printf("Error creating new DCM: %s", err2)

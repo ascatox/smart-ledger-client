@@ -57,4 +57,8 @@ public class DCM implements Serializable {
     public void setDsds(String dsds) {
         this.dsds = dsds;
     }
+
+    public boolean isEmpty() {
+        return (this.getUri().isEmpty());
+    }
 }

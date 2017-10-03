@@ -8,6 +8,7 @@ public final class DSM implements Serializable {
     private String uri;
     private String macAddress;
     private String dsd;
+    private String type;
 
     public DSM() {
         this.physicalArtifact = "";
@@ -68,5 +69,16 @@ public final class DSM implements Serializable {
 
     public void setConnectionParameters(String connectionParameters) {
         this.connectionParameters = connectionParameters;
+    }
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public boolean isEmpty() {
+        return (this.getUri().isEmpty());
     }
 }

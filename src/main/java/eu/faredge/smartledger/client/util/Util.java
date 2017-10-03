@@ -16,16 +16,24 @@
 
 package eu.faredge.smartledger.client.util;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.faredge.smartledger.client.model.DCM;
+import eu.faredge.smartledger.client.model.DSM;
+import eu.faredge.smartledger.client.model.RecordDCM;
+import eu.faredge.smartledger.client.model.RecordDSM;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.hyperledger.fabric.sdk.helper.Utils;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import static java.lang.String.format;
 
@@ -52,7 +60,8 @@ public class Util {
 
         String sourcePath = sourceDirectory.getAbsolutePath();
 
-        TarArchiveOutputStream archiveOutputStream = new TarArchiveOutputStream(new GzipCompressorOutputStream(new BufferedOutputStream(bos)));
+        TarArchiveOutputStream archiveOutputStream = new TarArchiveOutputStream(new GzipCompressorOutputStream(new
+                BufferedOutputStream(bos)));
         archiveOutputStream.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);
 
         try {
@@ -93,11 +102,13 @@ public class Util {
         File[] matches = directory.listFiles((dir, name) -> name.endsWith("_sk"));
 
         if (null == matches) {
-            throw new RuntimeException(format("Matches returned null does %s directory exist?", directory.getAbsoluteFile().getName()));
+            throw new RuntimeException(format("Matches returned null does %s directory exist?", directory
+                    .getAbsoluteFile().getName()));
         }
 
         if (matches.length != 1) {
-            throw new RuntimeException(format("Expected in %s only 1 sk file but found %d", directory.getAbsoluteFile().getName(), matches.length));
+            throw new RuntimeException(format("Expected in %s only 1 sk file but found %d", directory.getAbsoluteFile
+                    ().getName(), matches.length));
         }
 
         return matches[0];
@@ -156,5 +167,47 @@ public class Util {
         public String getCACertificateChain() {
             return caChain;
         }
+    }
+
+    public static List<DSM> extractDSMFromPayloads(List<String[]> payloads) {
+        List<DSM> dsms = new ArrayList<>();
+        payloads.stream().forEach(val -> {
+            String dsmString = val[1];
+            Util.out(dsmString);
+            if (null != dsmString && !StringUtils.isBlank(dsmString)) {
+                ObjectMapper mapper = new ObjectMapper();
+                try {
+                    RecordDSM[] recordDSMs = mapper.readValue(dsmString, RecordDSM[].class);
+                    for (RecordDSM recordDSM : recordDSMs) {
+                        if (null != recordDSM && null != recordDSM.getRecord())
+                            dsms.add(recordDSM.getRecord());
+                    }
+                } catch (IOException e) {
+                    Util.fail(e.getMessage());
+                }
+            }
+        });
+        return dsms;
+    }
+
+    public static List<DCM> extractDCMFromPayloads(List<String[]> payloads) {
+        List<DCM> dcms = new ArrayList<>();
+        payloads.stream().forEach(val -> {
+            String dsmString = val[1];
+            Util.out(dsmString);
+            if (null != dsmString && !StringUtils.isBlank(dsmString)) {
+                ObjectMapper mapper = new ObjectMapper();
+                try {
+                    RecordDCM[] recordDCMs = mapper.readValue(dsmString, RecordDCM[].class);
+                    for (RecordDCM recordDCM : recordDCMs) {
+                        if (null != recordDCM && null != recordDCM.getRecord())
+                            dcms.add(recordDCM.getRecord());
+                    }
+                } catch (IOException e) {
+                    Util.fail(e.getMessage());
+                }
+            }
+        });
+        return dcms;
     }
 }
