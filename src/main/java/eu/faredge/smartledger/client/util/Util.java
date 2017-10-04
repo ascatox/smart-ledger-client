@@ -31,6 +31,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.hyperledger.fabric.sdk.helper.Utils;
 
 import java.io.*;
+import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -38,6 +40,8 @@ import java.util.List;
 import static java.lang.String.format;
 
 public class Util {
+
+    public static final String REGEX_MACADDRESS = "^((([0-9A-Fa-f]{2}:){5})|(([0-9A-Fa-f]{2}-){5}))[0-9A-Fa-f]{2}$\n";
 
     /**
      * Private constructor to prevent instantiation.
@@ -169,6 +173,14 @@ public class Util {
         }
     }
 
+    /**
+     * Transform payloads in DSM with Array Structure payload[0] = peer's name payload owner
+     * payload[1] = Data coming from peer
+     *
+     * @param payloads
+     * @return
+     */
+
     public static List<DSM> extractDSMFromPayloads(List<String[]> payloads) {
         List<DSM> dsms = new ArrayList<>();
         payloads.stream().forEach(val -> {
@@ -190,15 +202,22 @@ public class Util {
         return dsms;
     }
 
+    /**
+     * Transform payloads in DCM with Array Structure payload[0] = peer's name payload owner
+     * payload[1] = Data coming from peer
+     *
+     * @param payloads
+     * @return
+     */
     public static List<DCM> extractDCMFromPayloads(List<String[]> payloads) {
         List<DCM> dcms = new ArrayList<>();
         payloads.stream().forEach(val -> {
-            String dsmString = val[1];
-            Util.out(dsmString);
-            if (null != dsmString && !StringUtils.isBlank(dsmString)) {
+            String dcmString = val[1];
+            Util.out(dcmString);
+            if (null != dcmString && !StringUtils.isBlank(dcmString)) {
                 ObjectMapper mapper = new ObjectMapper();
                 try {
-                    RecordDCM[] recordDCMs = mapper.readValue(dsmString, RecordDCM[].class);
+                    RecordDCM[] recordDCMs = mapper.readValue(dcmString, RecordDCM[].class);
                     for (RecordDCM recordDCM : recordDCMs) {
                         if (null != recordDCM && null != recordDCM.getRecord())
                             dcms.add(recordDCM.getRecord());
@@ -209,5 +228,22 @@ public class Util {
             }
         });
         return dcms;
+    }
+
+
+    public static boolean validateUri(String uri) throws IllegalArgumentException {
+        if (StringUtils.isEmpty(uri)) throw new IllegalArgumentException("uri cannot be empty");
+        final URL url;
+        try {
+            url = new URL(uri);
+            return true;
+        } catch (Exception e1) {
+            return false;
+        }
+    }
+
+    public static boolean validateMacAddress(String macAddress) throws IllegalArgumentException {
+        if (StringUtils.isEmpty(macAddress)) throw new IllegalArgumentException("macAddress cannot be empty");
+        return macAddress.matches(REGEX_MACADDRESS);
     }
 }

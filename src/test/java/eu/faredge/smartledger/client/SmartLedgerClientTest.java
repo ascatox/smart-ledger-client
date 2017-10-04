@@ -21,10 +21,10 @@ public class SmartLedgerClientTest {
 
     public static void initData() {
         dsm = new DSM();
-        dsm.setPhysicalArtifact("pippo");
-        dsm.setUri("12");
-        dsm.setMacAddress("ffaab1292002ddd");
-        dsm.setConnectionParameters("connParams");
+        dsm.setPhysicalArtifact("pluto");
+        dsm.setUri("13");
+        dsm.setMacAddress("123456789");
+        dsm.setConnectionParameters("connectionVals");
     }
 
     @BeforeClass
@@ -32,11 +32,12 @@ public class SmartLedgerClientTest {
         initData();
         client = new SmartLedgerClient(MYCHANNEL);
         try {
-            //client.installChaincode(true, true);
+           // client.installChaincode(true, true);
         } catch (Exception e) {
             assertFalse(e.getMessage(), true);
         }
     }
+
     @AfterClass
     public static void end() {
         client = null;
@@ -55,6 +56,55 @@ public class SmartLedgerClientTest {
     }
 
     @Test
+    public void testGetDataSourceManifestByUri() {
+        try {
+            String uri = "http://www.google.com";
+            DSM dataSourceManifestByUri = client.getDataSourceManifestByUri(uri);
+            assertNotNull(dataSourceManifestByUri);
+            assertFalse(dataSourceManifestByUri.isEmpty());
+        } catch (Exception e) {
+            assertFalse(e.getMessage(), true);
+        }
+    }
+
+    @Test
+    public void testGetDataConsumerManifestByUri() {
+        try {
+            String uri = "http://www.eng.it";
+            DCM dataConsumerManifestByUri = client.getDataConsumerManifestByUri(uri);
+            assertNotNull(dataConsumerManifestByUri);
+            assertFalse(dataConsumerManifestByUri.isEmpty());
+        } catch (Exception e) {
+            assertFalse(e.getMessage(), true);
+        }
+    }
+
+    @Test
+    public void testGetDataSourceManifestByMacAddress() {
+        try {
+            String mac = "123:456:789";
+            DSM dataSourceManifestByMacAddress = client.getDataSourceManifestByMacAddress(mac);
+            assertNotNull(dataSourceManifestByMacAddress);
+            assertFalse(dataSourceManifestByMacAddress.isEmpty());
+        } catch (Exception e) {
+            assertFalse(e.getMessage(), true);
+        }
+    }
+
+
+    @Test
+    public void testGetDataConsumerManifestByMacAddress() {
+        try {
+            String mac = "321:654:987";
+            DCM dataConsumerManifestByMacAddress = client.getDataConsumerManifestByMacAddress(mac);
+            assertNotNull(dataConsumerManifestByMacAddress);
+            assertFalse(dataConsumerManifestByMacAddress.isEmpty());
+        } catch (Exception e) {
+            assertFalse(e.getMessage(), true);
+        }
+    }
+
+    //@Test
     public void testGetAllDataSourceManifests() {
         try {
             List<DSM> allDSMs = client.getAllDataSourceManifests();
@@ -82,16 +132,14 @@ public class SmartLedgerClientTest {
     public void testRegisterDSMByUri() {
         SmartLedgerClient client = new SmartLedgerClient(MYCHANNEL);
         try {
-            String id = "dsrc:51e5f645-38aa-4a14-90d3-0986608a9684";
+            String uri = "dsrc:51e5f645-38aa-4a14-90d3-0986608a9684";
             client.installChaincode(true, true);
             client.registerDSM(dsm);
-            DSM dsm = client.getDataSourceManifest(id);
+            DSM dsm = client.getDataSourceManifestByUri(uri);
             assertNotNull(dsm);
             assertFalse(dsm.isEmpty());
         } catch (Exception e) {
             assertFalse(e.getMessage(), true);
         }
     }
-
-
 }

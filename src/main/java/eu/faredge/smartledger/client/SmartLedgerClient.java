@@ -14,7 +14,6 @@ import java.util.concurrent.CompletableFuture;
 
 public class SmartLedgerClient implements ISmartLedgerClient {
 
-    public static final int TIMEOUT = 360;
     private SmartLedgerClientHelper helper;
     private Channel channel;
 
@@ -30,6 +29,13 @@ public class SmartLedgerClient implements ISmartLedgerClient {
         }
     }
 
+    /**
+     * Installation function for the chaincode link @
+     *
+     * @param instantiate
+     * @param upgrade
+     * @throws Exception
+     */
     @Override
     public void installChaincode(boolean instantiate, boolean upgrade) throws Exception {
         SmartLedgerClientHelper.installChaincode(channel);
@@ -39,55 +45,115 @@ public class SmartLedgerClient implements ISmartLedgerClient {
         }
     }
 
+    /**
+     * @param isUpgrade
+     * @throws Exception
+     */
     @Override
     public void instantiateOrUpgradeChaincode(boolean isUpgrade) throws Exception {
         String[] args = {};
         CompletableFuture<BlockEvent.TransactionEvent> transactionEventCompletableFuture = SmartLedgerClientHelper
                 .instantiateOrUpgradeChaincode(channel, args, isUpgrade);
         BlockEvent.TransactionEvent event = null;
-        transactionEventCompletableFuture.complete(null);
-        if (isUpgrade)
-            Util.out("Chaincode upgraded correctly :-)");
-        else
-            Util.out("Chaincode instantiated correctly :-)");
-
+        transactionEventCompletableFuture.thenAccept((transactionEvent) -> {
+            if (isUpgrade)
+                Util.out("Chaincode upgraded correctly :-)");
+            else
+                Util.out("Chaincode instantiated correctly :-)");
+        }).exceptionally((error) -> {
+            Util.fail(error.getMessage());
+            return null;
+        });
     }
 
+    /**
+     * @param uri
+     * @return
+     * @throws Exception
+     */
     @Override
-    public DSM getDataSourceManifest(String id) throws Exception {
-        String[] args = {id};
+    public DSM getDataSourceManifestByUri(String uri) throws Exception {
+
+        String[] args = {uri};
         final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, "qGetDSMByUri", args);
-        Util.out("Query Chaincode successful!!!Data retrieved: ");
-        //TODO
-        return Util.extractDSMFromPayloads(payloads).get(0);
+        List<DSM> dsms = Util.extractDSMFromPayloads(payloads);
+        if (dsms.isEmpty())
+            Util.fail("No DSM retrieved from getDataSourceManifestByUri with URI: '" + uri + "'");
+        return dsms.get(0);
     }
 
+    /**
+     * @param macAddress
+     * @return
+     * @throws Exception
+     */
     @Override
-    public DCM getDataConsumerManifest(String id) {
-        String[] args = {id};
-        final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, "qGetDCMByUri", args);
-        Util.out("Query Chaincode successful!!!Data retrieved: ");
-        //TODO
-        return Util.extractDCMFromPayloads(payloads).get(0);
+    public DSM getDataSourceManifestByMacAddress(String macAddress) throws Exception {
+
+        String[] args = {macAddress};
+        final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, "qGetDSMByMacAdd", args);
+        List<DSM> dsms = Util.extractDSMFromPayloads(payloads);
+        if (dsms.isEmpty())
+            Util.fail("No DSM retrieved from getDataSourceManifestByUri with MAC Address: '" + macAddress + "'");
+        return dsms.get(0);
     }
 
+    /**
+     * @param macAddress
+     * @return
+     * @throws Exception
+     */
+    @Override
+    public DCM getDataConsumerManifestByMacAddress(String macAddress) throws Exception {
 
+        String[] args = {macAddress};
+        final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, "qGetDCMByMacAdd", args);
+        List<DCM> dcms = Util.extractDCMFromPayloads(payloads);
+        if (dcms.isEmpty())
+            Util.fail("No DSM retrieved from getDataSourceManifestByUri with MAC Address: '" + macAddress + "'");
+        return dcms.get(0);
+    }
+
+    /**
+     * @param uri
+     * @return
+     */
+    @Override
+    public DCM getDataConsumerManifestByUri(String uri) {
+        String[] args = {uri};
+        final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, "qGetDCMByUri", args);
+        List<DCM> dcms = Util.extractDCMFromPayloads(payloads);
+        if (dcms.isEmpty())
+            Util.fail("No DCM retrieved from getDataConsumerManifestByUri with URI: '" + uri + "'");
+        return dcms.get(0);
+    }
+
+    /**
+     * @return
+     * @throws Exception
+     */
     @Override
     public List<DSM> getAllDataSourceManifests() throws Exception {
         String[] args = {};
         final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, "qGetAllDSMs", args);
-        Util.out("Query Chaincode successful!!!Data retrieved: ");
         return Util.extractDSMFromPayloads(payloads);
     }
 
+    /**
+     * @return
+     * @throws Exception
+     */
     @Override
     public List<DCM> getAllDataConsumerManifests() throws Exception {
         String[] args = {};
         final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, "qGetAllDCMs", args);
-        Util.out("Query Chaincode successful!!!Data retrieved: ");
         return Util.extractDCMFromPayloads(payloads);
     }
 
+    /**
+     * @param dsm
+     * @throws Exception
+     */
     @Override
     public void registerDSM(DSM dsm) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
@@ -96,9 +162,18 @@ public class SmartLedgerClient implements ISmartLedgerClient {
                 .getConnectionParameters()};
         BlockEvent.TransactionEvent event = null;
         SmartLedgerClientHelper.invokeChaincode(channel,
-                "iCreateDSM", args).complete(null);
+                "iCreateDSM", args).thenAccept(transactionEvent -> {
+            Util.out("Register DSM completed succesfully ");
+        }).exceptionally((error) -> {
+            Util.fail(error.getMessage());
+            return null;
+        });
     }
 
+    /**
+     * @param dcm
+     * @throws Exception
+     */
     @Override
     public void registerDCM(DCM dcm) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
@@ -106,9 +181,11 @@ public class SmartLedgerClient implements ISmartLedgerClient {
         String[] args = {dcm.getPhysicalArtifact(), dcm.getUri(), dcm.getMacAddress(), dcm.getDsds()};
         BlockEvent.TransactionEvent event = null;
         SmartLedgerClientHelper.invokeChaincode(channel,
-                "iCreateDCM", args).complete(null);
+                "iCreateDCM", args).thenAccept(transactionEvent -> {
+            Util.out("Register DCM completed succesfully ");
+        }).exceptionally((error) -> {
+            Util.fail(error.getMessage());
+            return null;
+        });
     }
-
-
-
 }

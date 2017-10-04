@@ -12,9 +12,13 @@ public interface ISmartLedgerClient {
 
     void registerDCM(DCM dcm) throws Exception;
 
-    DSM getDataSourceManifest(String id) throws Exception;
+    DSM getDataSourceManifestByUri(String uri) throws Exception;
 
-    DCM getDataConsumerManifest(String id);
+    DSM getDataSourceManifestByMacAddress(String macAddress) throws Exception;
+
+    DCM getDataConsumerManifestByMacAddress(String macAddress) throws Exception;
+
+    DCM getDataConsumerManifestByUri(String uri);
 
     List<DSM> getAllDataSourceManifests() throws Exception;
 

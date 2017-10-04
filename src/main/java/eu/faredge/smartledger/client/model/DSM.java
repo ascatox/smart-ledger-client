@@ -1,11 +1,22 @@
 package eu.faredge.smartledger.client.model;
 
+import org.hibernate.validator.constraints.URL;
+
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.Pattern;
 import java.io.Serializable;
 
 public final class DSM implements Serializable {
 
+    @NotEmpty(message = "physicalArtifact cannot be empty")
     private String physicalArtifact;
+
+    @NotEmpty(message = "uri cannot be empty")
+    @URL(message = "uri should be a valid URL")
     private String uri;
+
+    @Pattern(regexp = "^((([0-9A-Fa-f]{2}:){5})|(([0-9A-Fa-f]{2}-){5}))[0-9A-Fa-f]{2}$\n", message = "MAC Address is " +
+            "invalid")
     private String macAddress;
     private String dsd;
     private String type;
@@ -70,6 +81,7 @@ public final class DSM implements Serializable {
     public void setConnectionParameters(String connectionParameters) {
         this.connectionParameters = connectionParameters;
     }
+
     public String getType() {
         return type;
     }
@@ -79,6 +91,6 @@ public final class DSM implements Serializable {
     }
 
     public boolean isEmpty() {
-        return (this.getUri().isEmpty());
+        return (this.getUri().isEmpty() || this.getMacAddress().isEmpty());
     }
 }
