@@ -85,7 +85,6 @@ func (d *Device) Init(APIstub shim.ChaincodeStubInterface) sc.Response {
 		fmt.Println("Added", DSMs[j])
 		j = j + 1
 	}
-
 	DCMs := []DCM{
 		DCM{
 			PhysicalArtifact: "zxcvb",
@@ -337,6 +336,41 @@ func (d *Device) querDCMByPhyArt(APIstub shim.ChaincodeStubInterface, phyArt str
 	return shim.Success(buffer)
 }
 
+func (d *Device) removeDSM(stub shim.ChaincodeStubInterface, key string) sc.Response {
+	if (len(strings.TrimSpace(key))) == 0 {
+		return shim.Error("Incorrect number of arguments. Expecting DSM key")
+	}
+	dsmAsBytes, _ := stub.GetState(key)
+	if dsmAsBytes == nil {
+		return shim.Error("Error DSM object with key: " + key + " not found")
+	}
+	var dsm DSM
+	err := json.Unmarshal(dsmAsBytes, &dsm)
+	if err == nil {
+		return shim.Error("Error removing DSM with key: " + key)
+	}
+	if dsm.Type != "DSM" {
+		return shim.Error("Error removing DSM type of the object for the key: " + key + " is incorrect (type: " + dsm.Type + ")")
+	}
+	fmt.Printf("Trying to delete DSM Object with key: " + key)
+	error := stub.DelState(key)
+	if error != nil {
+		return shim.Error("Error removing DSM with key: " + key)
+	}
+	return shim.Success(nil)
+}
+
+/*func (d *Device) removeDCM(stub shim.ChaincodeStubInterface, key string) sc.Response {
+	if (key == nil || len(strings.TrimSpace(key))) == 0 {
+		return shim.Error("Incorrect number of arguments. Expecting DCM key")
+	}
+	error := stub.DelState(key)
+	if error != nil {
+		return shim.Error("Error removing DCM with key: " + key)
+	}
+	return shim.Success(nil)
+}*/
+
 func getQueryResultForQueryString(stub shim.ChaincodeStubInterface, queryString string) ([]byte, error) {
 	fmt.Printf("- getQueryResultForQueryString queryString:\n%s\n", queryString)
 	resultsIterator, err := stub.GetQueryResult(queryString)
@@ -406,6 +440,9 @@ func (d *Device) Invoke(stub shim.ChaincodeStubInterface) sc.Response {
 	} else if function == "qGetDCMByPhyArt" {
 		fmt.Printf("CALL querDCMByPhyArt")
 		return d.querDCMByPhyArt(stub, args[0])
+	} else if function == "iRemoveDSM" {
+		fmt.Printf("CALL iRemoveDSM")
+		return d.removeDSM(stub, args[0])
 	}
 	return shim.Success(nil)
 }

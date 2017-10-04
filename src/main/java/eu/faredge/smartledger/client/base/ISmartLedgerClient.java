@@ -27,4 +27,6 @@ public interface ISmartLedgerClient {
     void instantiateOrUpgradeChaincode(boolean isUpgrade) throws Exception;
 
     List<DCM> getAllDataConsumerManifests() throws Exception;
+
+    void removeDSM(String uri) throws Exception;
 }

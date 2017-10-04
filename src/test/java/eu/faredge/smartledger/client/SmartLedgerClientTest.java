@@ -32,7 +32,7 @@ public class SmartLedgerClientTest {
         initData();
         client = new SmartLedgerClient(MYCHANNEL);
         try {
-           // client.installChaincode(true, true);
+             client.installChaincode(true, true);
         } catch (Exception e) {
             assertFalse(e.getMessage(), true);
         }
@@ -142,4 +142,19 @@ public class SmartLedgerClientTest {
             assertFalse(e.getMessage(), true);
         }
     }
+
+    @Test
+    public void testRemoveDSM() {
+        SmartLedgerClient client = new SmartLedgerClient(MYCHANNEL);
+        try {
+            String uri = "http://www.google.com";
+            client.removeDSM(uri);
+            DSM dsm = client.getDataSourceManifestByUri(uri);
+            assertNull(dsm);
+            assertTrue(dsm.isEmpty());
+        } catch (Exception e) {
+            assertFalse(e.getMessage(), true);
+        }
+    }
+
 }

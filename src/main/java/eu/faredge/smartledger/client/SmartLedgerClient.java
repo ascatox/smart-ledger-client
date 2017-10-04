@@ -188,4 +188,21 @@ public class SmartLedgerClient implements ISmartLedgerClient {
             return null;
         });
     }
-}
+
+    @Override
+    public void removeDSM(String uri) throws Exception {
+        String[] args = {uri};
+        BlockEvent.TransactionEvent event = null;
+        SmartLedgerClientHelper.invokeChaincode(channel,
+                "iRemoveDSM", args).thenAccept(transactionEvent -> {
+            Util.out("Remove DSM completed succesfully  with uri: " + uri);
+        }).exceptionally((error) -> {
+            Util.fail(error.getMessage());
+            return null;
+        });
+
+
+    }
+
+
+}//end Class

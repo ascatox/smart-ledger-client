@@ -21,7 +21,7 @@ public class DCM implements Serializable {
 
     public DCM() {
         this.physicalArtifact = "";
-        this.uri = "";
+        this.uri = ""; //Primary Key
         this.macAddress = "";
         this.dsds = "";
     }

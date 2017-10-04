@@ -13,7 +13,7 @@ public final class DSM implements Serializable {
 
     @NotEmpty(message = "uri cannot be empty")
     @URL(message = "uri should be a valid URL")
-    private String uri;
+    private String uri; //Primary key
 
     @Pattern(regexp = "^((([0-9A-Fa-f]{2}:){5})|(([0-9A-Fa-f]{2}-){5}))[0-9A-Fa-f]{2}$\n", message = "MAC Address is " +
             "invalid")
