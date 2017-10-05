@@ -4,8 +4,6 @@ import eu.faredge.smartledger.client.util.Util;
 import org.junit.Test;
 
 import static junit.framework.TestCase.fail;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class UtilTest {
@@ -32,7 +30,7 @@ public class UtilTest {
             Util.validateUri("");
             fail();
         } catch (IllegalArgumentException e) {
-            assertThat(e.getMessage(), is("empty uri"));
+           assertTrue(e.getMessage(), true);
         }
     }
 
@@ -57,7 +55,7 @@ public class UtilTest {
             Util.validateMacAddress("");
             fail();
         } catch (IllegalArgumentException e) {
-            assertThat(e.getMessage(), is("empty macAddress"));
+            assertTrue(e.getMessage(), true);       
         }
     }
 

@@ -17,11 +17,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -46,6 +42,7 @@ import org.hyperledger.fabric.sdk.helper.Utils;
 
 
 public class TestConfig {
+    private static ResourceBundle finder = ResourceBundle.getBundle("smart-ledger");
     private static final Log logger = LogFactory.getLog(TestConfig.class);
 
     private static final String DEFAULT_CONFIG = "src/main/java/eu/faredge/fabric/client/testutils.properties";
@@ -61,7 +58,7 @@ public class TestConfig {
     private static final Pattern orgPat = Pattern.compile("^" + Pattern.quote(INTEGRATIONTESTS_ORG) + "([^\\.]+)\\.mspid$");
 
     private static final String INTEGRATIONTESTSTLS = PROPBASE + "integrationtests.tls";
-    public static final String HOST = "localhost";
+    public static final String HOST = finder.getString("FABRIC_HOST");
 
     private static TestConfig config;
     private static final Properties sdkProperties = new Properties();
@@ -93,7 +90,6 @@ public class TestConfig {
             defaultProperty(DEPLOYWAITTIME, "120000");
             defaultProperty(PROPOSALWAITTIME, "120000");
 
-            //////
             defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg1.mspid", "Org1MSP");
             defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg1.domname", "org1.example.com");
             defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg1.ca_location", "http://" + HOST + ":7054");
@@ -308,7 +304,6 @@ public class TestConfig {
     }
 
     public String getTestChannelPath() {
-
         return "src/main/java/fixture/sdkintegration/e2e-2Orgs/channel";
 
     }

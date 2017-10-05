@@ -124,8 +124,8 @@ func (d *Device) queryDCM(APIstub shim.ChaincodeStubInterface, args []string) sc
 	return shim.Success(dcmAsBytes)
 }
 
-func (d *Device) createDSM(APIstub shim.ChaincodeStubInterface, args []string) sc.Response {
-	fmt.Println("Entering inside createDSM")
+func (d *Device) editDSM(APIstub shim.ChaincodeStubInterface, args []string) sc.Response {
+	fmt.Println("Entering inside editDSM")
 
 	if len(args) != 5 {
 		lenght := strconv.Itoa(len(args))
@@ -144,13 +144,14 @@ func (d *Device) createDSM(APIstub shim.ChaincodeStubInterface, args []string) s
 	// Convert keys to compound ke
 
 	dsmAsBytes, _ := json.Marshal(dsm)
-	fmt.Println("createDSM PutState", dsmAsBytes)
+	fmt.Println("editDSM PutState", dsmAsBytes)
+	// URI Primary Key
 	APIstub.PutState(args[1], dsmAsBytes)
 
 	return shim.Success(nil)
 }
 
-func (d *Device) createDCM(APIstub shim.ChaincodeStubInterface, args []string) sc.Response {
+func (d *Device) editDCM(APIstub shim.ChaincodeStubInterface, args []string) sc.Response {
 
 	if len(args) != 4 {
 		return shim.Error("Incorrect number of arguments. Expecting 4")
@@ -165,7 +166,8 @@ func (d *Device) createDCM(APIstub shim.ChaincodeStubInterface, args []string) s
 	}
 
 	dcmAsBytes, _ := json.Marshal(dcm)
-	APIstub.PutState(args[0], dcmAsBytes)
+	// URI Primary Key
+	APIstub.PutState(args[1], dcmAsBytes)
 
 	return shim.Success(nil)
 }
@@ -344,9 +346,10 @@ func (d *Device) removeDSM(stub shim.ChaincodeStubInterface, key string) sc.Resp
 	if dsmAsBytes == nil {
 		return shim.Error("Error DSM object with key: " + key + " not found")
 	}
+
 	var dsm DSM
 	err := json.Unmarshal(dsmAsBytes, &dsm)
-	if err == nil {
+	if err != nil {
 		return shim.Error("Error removing DSM with key: " + key)
 	}
 	if dsm.Type != "DSM" {
@@ -360,16 +363,30 @@ func (d *Device) removeDSM(stub shim.ChaincodeStubInterface, key string) sc.Resp
 	return shim.Success(nil)
 }
 
-/*func (d *Device) removeDCM(stub shim.ChaincodeStubInterface, key string) sc.Response {
-	if (key == nil || len(strings.TrimSpace(key))) == 0 {
+func (d *Device) removeDCM(stub shim.ChaincodeStubInterface, key string) sc.Response {
+	if (len(strings.TrimSpace(key))) == 0 {
 		return shim.Error("Incorrect number of arguments. Expecting DCM key")
 	}
+	dcmAsBytes, _ := stub.GetState(key)
+	if dcmAsBytes == nil {
+		return shim.Error("Error DCM object with key: " + key + " not found")
+	}
+
+	var dcm DCM
+	err := json.Unmarshal(dcmAsBytes, &dcm)
+	if err != nil {
+		return shim.Error("Error removing DCM with key: " + key)
+	}
+	if dcm.Type != "DCM" {
+		return shim.Error("Error removing DCM type of the object for the key: " + key + " is incorrect (type: " + dcm.Type + ")")
+	}
+	fmt.Printf("Trying to delete DCM Object with key: " + key)
 	error := stub.DelState(key)
 	if error != nil {
 		return shim.Error("Error removing DCM with key: " + key)
 	}
 	return shim.Success(nil)
-}*/
+}
 
 func getQueryResultForQueryString(stub shim.ChaincodeStubInterface, queryString string) ([]byte, error) {
 	fmt.Printf("- getQueryResultForQueryString queryString:\n%s\n", queryString)
@@ -409,40 +426,39 @@ func getQueryResultForQueryString(stub shim.ChaincodeStubInterface, queryString 
 
 func (d *Device) Invoke(stub shim.ChaincodeStubInterface) sc.Response {
 	function, args := stub.GetFunctionAndParameters()
-	fmt.Printf("CALL function (DSM): " + function)
-	if function == "qGetAllDSMs" {
-		fmt.Printf("CALL queryAllDSMs")
+	fmt.Printf("CALL function: " + function)
+
+	switch function {
+	// DSM Type
+	// Query DSM
+	case "qGetAllDSMs":
 		return d.queryAllDSMs(stub)
-	} else if function == "iCreateDSM" {
-		fmt.Printf("CALL createDSM")
-		return d.createDSM(stub, args)
-	} else if function == "qGetDSMByUri" {
-		fmt.Printf("CALL querDSMByUri")
+	case "qGetDSMByUri":
 		return d.querDSMByUri(stub, args[0])
-	} else if function == "qGetDSMByMacAdd" {
-		fmt.Printf("CALL querDSMByMacAdd")
+	case "qGetDSMByMacAdd":
 		return d.querDSMByMacAdd(stub, args[0])
-	} else if function == "qGetDSMByPhyArt" {
-		fmt.Printf("CALL querDSMByPhyArt")
+	case "qGetDSMByPhyArt":
 		return d.querDSMByPhyArt(stub, args[0])
-	} else if function == "qGetAllDCMs" {
-		fmt.Printf("CALL queryAllDCMs")
-		return d.queryAllDCMs(stub)
-	} else if function == "iCreateDCM" {
-		fmt.Printf("CALL createDCM")
-		return d.createDCM(stub, args)
-	} else if function == "qGetDCMByUri" {
-		fmt.Printf("CALL querDCMByUri")
-		return d.querDCMByUri(stub, args[0])
-	} else if function == "qGetDCMByMacAdd" {
-		fmt.Printf("CALL querDCMByMacAdd")
-		return d.querDCMByMacAdd(stub, args[0])
-	} else if function == "qGetDCMByPhyArt" {
-		fmt.Printf("CALL querDCMByPhyArt")
-		return d.querDCMByPhyArt(stub, args[0])
-	} else if function == "iRemoveDSM" {
-		fmt.Printf("CALL iRemoveDSM")
+	// Edit and Remove DSM
+	case "iEditDSM":
+		return d.editDSM(stub, args)
+	case "iRemoveDSM":
 		return d.removeDSM(stub, args[0])
+	// DCM Type
+	// Query DCM
+	case "qGetAllDCMs":
+		return d.queryAllDCMs(stub)
+	case "qGetDCMByUri":
+		return d.querDCMByUri(stub, args[0])
+	case "qGetDCMByMacAdd":
+		return d.querDCMByMacAdd(stub, args[0])
+	case "qGetDCMByPhyArt":
+		return d.querDCMByPhyArt(stub, args[0])
+	// Edit and Remove DCM
+	case "iEditDCM":
+		return d.editDCM(stub, args)
+	case "iRemoveDCM":
+		return d.removeDCM(stub, args[0])
 	}
 	return shim.Success(nil)
 }
@@ -452,9 +468,9 @@ func main() {
 	logger.SetLevel(shim.LogInfo)
 	logLevel, _ := shim.LogLevel(os.Getenv("SHIM_LOGGING_LEVEL"))
 	shim.SetLoggingLevel(logLevel)
-	// Create a new Smart Contract
+	// Edit a new Smart Contract
 	err := shim.Start(new(Device))
-	fmt.Printf("Create a new generic Device Type")
+	fmt.Printf("Edit a new generic Device Type")
 	if err != nil {
 		fmt.Printf("Error creating new generic Device: %s", err)
 	}

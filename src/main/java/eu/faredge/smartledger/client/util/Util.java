@@ -31,7 +31,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.hyperledger.fabric.sdk.helper.Utils;
 
 import java.io.*;
-import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -41,7 +40,7 @@ import static java.lang.String.format;
 
 public class Util {
 
-    public static final String REGEX_MACADDRESS = "^((([0-9A-Fa-f]{2}:){5})|(([0-9A-Fa-f]{2}-){5}))[0-9A-Fa-f]{2}$\n";
+    public static final String REGEX_MAC_ADDRESS = "\\b([0-9a-fA-F]{2}:??){5}([0-9a-fA-F]{2})\\b";
 
     /**
      * Private constructor to prevent instantiation.
@@ -120,7 +119,6 @@ public class Util {
     }
 
     public static void out(String format, Object... args) {
-
         System.err.flush();
         System.out.flush();
 
@@ -244,6 +242,6 @@ public class Util {
 
     public static boolean validateMacAddress(String macAddress) throws IllegalArgumentException {
         if (StringUtils.isEmpty(macAddress)) throw new IllegalArgumentException("macAddress cannot be empty");
-        return macAddress.matches(REGEX_MACADDRESS);
+        return macAddress.matches(REGEX_MAC_ADDRESS);
     }
 }

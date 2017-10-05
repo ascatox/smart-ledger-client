@@ -10,6 +10,10 @@ public interface ISmartLedgerClient {
 
     void registerDSM(DSM dsm) throws Exception;
 
+    void editRegisteredDSM(DSM dsm) throws Exception;
+
+    void editRegisteredDCM(DCM dcm) throws Exception;
+
     void registerDCM(DCM dcm) throws Exception;
 
     DSM getDataSourceManifestByUri(String uri) throws Exception;
@@ -29,4 +33,6 @@ public interface ISmartLedgerClient {
     List<DCM> getAllDataConsumerManifests() throws Exception;
 
     void removeDSM(String uri) throws Exception;
+
+    void removeDCM(String uri) throws Exception;
 }

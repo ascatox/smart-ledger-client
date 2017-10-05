@@ -6,6 +6,8 @@ import eu.faredge.smartledger.client.helper.SmartLedgerClientHelper;
 import eu.faredge.smartledger.client.model.DCM;
 import eu.faredge.smartledger.client.model.DSM;
 import eu.faredge.smartledger.client.util.Util;
+import eu.faredge.smartledger.client.util.Validator;
+import org.apache.commons.lang3.StringUtils;
 import org.hyperledger.fabric.sdk.BlockEvent;
 import org.hyperledger.fabric.sdk.Channel;
 
@@ -16,7 +18,7 @@ public class SmartLedgerClient implements ISmartLedgerClient {
 
     private SmartLedgerClientHelper helper;
     private Channel channel;
-
+    private Validator validator;
 
     public SmartLedgerClient(String channelName) {
         helper = new SmartLedgerClientHelper();
@@ -24,6 +26,7 @@ public class SmartLedgerClient implements ISmartLedgerClient {
             helper.checkConfig();
             helper.setup();
             channel = helper.constructChannel(channelName);
+            validator = new Validator();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -73,7 +76,9 @@ public class SmartLedgerClient implements ISmartLedgerClient {
      */
     @Override
     public DSM getDataSourceManifestByUri(String uri) throws Exception {
-
+        if (StringUtils.isEmpty(uri)) throw new IllegalArgumentException("Error in method getDataSourceManifestByUri " +
+                "uri " +
+                "cannot be empty");
         String[] args = {uri};
         final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, "qGetDSMByUri", args);
         List<DSM> dsms = Util.extractDSMFromPayloads(payloads);
@@ -89,7 +94,10 @@ public class SmartLedgerClient implements ISmartLedgerClient {
      */
     @Override
     public DSM getDataSourceManifestByMacAddress(String macAddress) throws Exception {
-
+        if (StringUtils.isEmpty(macAddress))
+            throw new IllegalArgumentException("Error in method getDataSourceManifestByMacAddress " +
+                    "macAddress " +
+                    "cannot be empty");
         String[] args = {macAddress};
         final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, "qGetDSMByMacAdd", args);
         List<DSM> dsms = Util.extractDSMFromPayloads(payloads);
@@ -105,7 +113,10 @@ public class SmartLedgerClient implements ISmartLedgerClient {
      */
     @Override
     public DCM getDataConsumerManifestByMacAddress(String macAddress) throws Exception {
-
+        if (StringUtils.isEmpty(macAddress))
+            throw new IllegalArgumentException("Error in method getDataConsumerManifestByMacAddress " +
+                    "macAddress " +
+                    "cannot be empty");
         String[] args = {macAddress};
         final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, "qGetDCMByMacAdd", args);
         List<DCM> dcms = Util.extractDCMFromPayloads(payloads);
@@ -120,6 +131,10 @@ public class SmartLedgerClient implements ISmartLedgerClient {
      */
     @Override
     public DCM getDataConsumerManifestByUri(String uri) {
+        if (StringUtils.isEmpty(uri))
+            throw new IllegalArgumentException("Error in method getDataConsumerManifestByUri " +
+                    "uri " +
+                    "cannot be empty");
         String[] args = {uri};
         final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, "qGetDCMByUri", args);
         List<DCM> dcms = Util.extractDCMFromPayloads(payloads);
@@ -151,19 +166,19 @@ public class SmartLedgerClient implements ISmartLedgerClient {
     }
 
     /**
-     * @param dsm
      * @throws Exception
      */
     @Override
     public void registerDSM(DSM dsm) throws Exception {
+        validator.validateBean(dsm);
         ObjectMapper mapper = new ObjectMapper();
         String json = mapper.writeValueAsString(dsm);
         String[] args = {dsm.getPhysicalArtifact(), dsm.getUri(), dsm.getMacAddress(), dsm.getDsd(), dsm
                 .getConnectionParameters()};
         BlockEvent.TransactionEvent event = null;
         SmartLedgerClientHelper.invokeChaincode(channel,
-                "iCreateDSM", args).thenAccept(transactionEvent -> {
-            Util.out("Register DSM completed succesfully ");
+                "iEditDSM", args).thenAccept(transactionEvent -> {
+            Util.out("Register DSM completed successfully ");
         }).exceptionally((error) -> {
             Util.fail(error.getMessage());
             return null;
@@ -176,13 +191,14 @@ public class SmartLedgerClient implements ISmartLedgerClient {
      */
     @Override
     public void registerDCM(DCM dcm) throws Exception {
+        validator.validateBean(dcm);
         ObjectMapper mapper = new ObjectMapper();
         String json = mapper.writeValueAsString(dcm);
         String[] args = {dcm.getPhysicalArtifact(), dcm.getUri(), dcm.getMacAddress(), dcm.getDsds()};
         BlockEvent.TransactionEvent event = null;
         SmartLedgerClientHelper.invokeChaincode(channel,
-                "iCreateDCM", args).thenAccept(transactionEvent -> {
-            Util.out("Register DCM completed succesfully ");
+                "iEditDCM", args).thenAccept(transactionEvent -> {
+            Util.out("Register DCM completed successfully ");
         }).exceptionally((error) -> {
             Util.fail(error.getMessage());
             return null;
@@ -190,18 +206,64 @@ public class SmartLedgerClient implements ISmartLedgerClient {
     }
 
     @Override
+    public void editRegisteredDSM(DSM dsm) throws Exception {
+        validator.validateBean(dsm);
+        DSM dataSourceManifestByUri = getDataSourceManifestByUri(dsm.getUri());
+        if (dataSourceManifestByUri.isEmpty())
+            Util.fail("DSM not registered");
+        registerDSM(dsm);
+    }
+
+    @Override
+    public void editRegisteredDCM(DCM dcm) throws Exception {
+        validator.validateBean(dcm);
+        DSM dataSourceManifestByUri = getDataSourceManifestByUri(dcm.getUri());
+        if (dataSourceManifestByUri.isEmpty())
+            Util.fail("DCM not registered");
+        registerDCM(dcm);
+    }
+
+    /**
+     * @param uri
+     * @throws Exception
+     */
+
+    @Override
     public void removeDSM(String uri) throws Exception {
+        if (StringUtils.isEmpty(uri))
+            throw new IllegalArgumentException("Error in method removeDSM " +
+                    "uri " +
+                    "cannot be empty");
         String[] args = {uri};
         BlockEvent.TransactionEvent event = null;
         SmartLedgerClientHelper.invokeChaincode(channel,
                 "iRemoveDSM", args).thenAccept(transactionEvent -> {
-            Util.out("Remove DSM completed succesfully  with uri: " + uri);
+            Util.out("Remove DSM completed successfully  with uri: " + uri);
         }).exceptionally((error) -> {
             Util.fail(error.getMessage());
             return null;
         });
+    }
 
-
+    /**
+     * @param uri
+     * @throws Exception
+     */
+    @Override
+    public void removeDCM(String uri) throws Exception {
+        if (StringUtils.isEmpty(uri))
+            throw new IllegalArgumentException("Error in method removeDCM " +
+                    "uri " +
+                    "cannot be empty");
+        String[] args = {uri};
+        BlockEvent.TransactionEvent event = null;
+        SmartLedgerClientHelper.invokeChaincode(channel,
+                "iRemoveDCM", args).thenAccept(transactionEvent -> {
+            Util.out("Remove DCM completed successfully  with uri: " + uri);
+        }).exceptionally((error) -> {
+            Util.fail(error.getMessage());
+            return null;
+        });
     }
 
 
