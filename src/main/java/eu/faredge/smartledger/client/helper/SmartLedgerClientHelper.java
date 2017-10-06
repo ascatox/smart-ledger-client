@@ -33,7 +33,7 @@ public class SmartLedgerClientHelper {
     private static ResourceBundle finder = ResourceBundle.getBundle("smart-ledger");
     private static final TestConfig testConfig = TestConfig.getConfig();
     private static final String TEST_ADMIN_NAME = finder.getString("TEST_ADMIN_NAME");
-    private static final String TESTUSER_1_NAME = finder.getString("TESTUSER_1_NAME");
+    private static final String TESTUSER_1_NAME = finder.getString("TEST_USER_1_NAME");
     private static final String TEST_FIXTURES_PATH = finder.getString("TEST_FIXTURES_PATH");
 
     private static final String CHAIN_CODE_NAME = finder.getString("CHAIN_CODE_NAME");

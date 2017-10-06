@@ -6,7 +6,7 @@ import org.junit.Test;
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertTrue;
 
-public class UtilTest {
+public class TestUtil {
 
 
     @Test

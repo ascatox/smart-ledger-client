@@ -43,10 +43,13 @@ import org.hyperledger.fabric.sdk.helper.Utils;
 
 public class TestConfig {
     private static ResourceBundle finder = ResourceBundle.getBundle("smart-ledger");
+    public static final String HOST = finder.getString("FABRIC_HOST");
+
     private static final Log logger = LogFactory.getLog(TestConfig.class);
 
     private static final String DEFAULT_CONFIG = "src/main/java/eu/faredge/fabric/client/testutils.properties";
-    private static final String ORG_HYPERLEDGER_FABRIC_SDK_CONFIGURATION = "org.hyperledger.fabric.sdktest.configuration";
+    private static final String ORG_HYPERLEDGER_FABRIC_SDK_CONFIGURATION = "org.hyperledger.fabric.sdktest" +
+            ".configuration";
 
     private static final String PROPBASE = "org.hyperledger.fabric.sdktest.";
 
@@ -55,11 +58,10 @@ public class TestConfig {
     private static final String PROPOSALWAITTIME = PROPBASE + "ProposalWaitTime";
 
     private static final String INTEGRATIONTESTS_ORG = PROPBASE + "integrationTests.org.";
-    private static final Pattern orgPat = Pattern.compile("^" + Pattern.quote(INTEGRATIONTESTS_ORG) + "([^\\.]+)\\.mspid$");
+    private static final Pattern orgPat = Pattern.compile("^" + Pattern.quote(INTEGRATIONTESTS_ORG) + "([^\\.]+)\\" +
+            ".mspid$");
 
     private static final String INTEGRATIONTESTSTLS = PROPBASE + "integrationtests.tls";
-    public static final String HOST = finder.getString("FABRIC_HOST");
-
     private static TestConfig config;
     private static final Properties sdkProperties = new Properties();
     private final boolean runningTLS;
@@ -85,27 +87,29 @@ public class TestConfig {
         } finally {
 
             // Default values
-
             defaultProperty(INVOKEWAITTIME, "100000");
             defaultProperty(DEPLOYWAITTIME, "120000");
             defaultProperty(PROPOSALWAITTIME, "120000");
-
             defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg1.mspid", "Org1MSP");
             defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg1.domname", "org1.example.com");
             defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg1.ca_location", "http://" + HOST + ":7054");
             defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg1.caName", "ca.example.com");
             defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg1.peer_locations", "peer0.org1.example.com@grpc://" + HOST
                     + ":7051,");
-                    //" peer1.org1.example.com@grpc://localhost:7053");
-            defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg1.orderer_locations", "orderer.example.com@grpc://" + HOST + ":7050");
+            //" peer1.org1.example.com@grpc://localhost:7053");
+            defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg1.orderer_locations", "orderer.example.com@grpc://" + HOST
+                    + ":7050");
             defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg1.eventhub_locations", "peer0.org1.example.com@grpc://" +
-                    HOST + ":7053,peer1.org1.example.com@grpc://"+ HOST + ":7058");
+                    HOST + ":7053,peer1.org1.example.com@grpc://" + HOST + ":7058");
 //            defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg2.mspid", "Org2MSP");
 //            defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg2.domname", "org2.example.com");
 //            defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg2.ca_location", "http://localhost:8054");
-//            defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg2.peer_locations", "peer0.org2.example.com@grpc://localhost:8051,peer1.org2.example.com@grpc://localhost:8056");
-//            defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg2.orderer_locations", "orderer.example.com@grpc://localhost:7050");
-//            defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg2.eventhub_locations", "peer0.org2.example.com@grpc://localhost:8053, peer1.org2.example.com@grpc://localhost:8058");
+//            defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg2.peer_locations", "peer0.org2.example
+// .com@grpc://localhost:8051,peer1.org2.example.com@grpc://localhost:8056");
+//            defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg2.orderer_locations", "orderer.example
+// .com@grpc://localhost:7050");
+//            defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg2.eventhub_locations", "peer0.org2.example
+// .com@grpc://localhost:8053, peer1.org2.example.com@grpc://localhost:8058");
 
             defaultProperty(INTEGRATIONTESTSTLS, null);
             runningTLS = null != sdkProperties.getProperty(INTEGRATIONTESTSTLS, null);
@@ -149,19 +153,22 @@ public class TestConfig {
                     sampleOrg.addOrdererLocation(nl[0], grpcTLSify(nl[1]));
                 }
 
-                String eventHubNames = sdkProperties.getProperty(INTEGRATIONTESTS_ORG + orgName + ".eventhub_locations");
+                String eventHubNames = sdkProperties.getProperty(INTEGRATIONTESTS_ORG + orgName + "" +
+                        ".eventhub_locations");
                 ps = eventHubNames.split("[ \t]*,[ \t]*");
                 for (String peer : ps) {
                     String[] nl = peer.split("[ \t]*@[ \t]*");
                     sampleOrg.addEventHubLocation(nl[0], grpcTLSify(nl[1]));
                 }
 
-                sampleOrg.setCALocation(httpTLSify(sdkProperties.getProperty((INTEGRATIONTESTS_ORG + org.getKey() + ".ca_location"))));
+                sampleOrg.setCALocation(httpTLSify(sdkProperties.getProperty((INTEGRATIONTESTS_ORG + org.getKey() + "" +
+                        ".ca_location"))));
 
                 sampleOrg.setCAName(sdkProperties.getProperty((INTEGRATIONTESTS_ORG + org.getKey() + ".caName")));
 
                 if (runningFabricCATLS) {
-                    String cert = "src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/DNAME/ca/ca.DNAME-cert.pem".replaceAll("DNAME", domainName);
+                    String cert = ("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations" +
+                            "/DNAME/ca/ca.DNAME-cert.pem").replaceAll("DNAME", domainName);
                     File cf = new File(cert);
                     if (!cf.exists() || !cf.isFile()) {
                         throw new RuntimeException("TEST is missing cert file " + cf.getAbsolutePath());
@@ -280,7 +287,8 @@ public class TestConfig {
 
         final String domainName = getDomainName(name);
 
-        File cert = Paths.get(getTestChannelPath(), "crypto-config/ordererOrganizations".replace("orderer", type), domainName, type + "s",
+        File cert = Paths.get(getTestChannelPath(), "crypto-config/ordererOrganizations".replace("orderer", type),
+                domainName, type + "s",
                 name, "tls/server.crt").toFile();
         if (!cert.exists()) {
             throw new RuntimeException(String.format("Missing cert file for: %s. Could not find at location: %s", name,

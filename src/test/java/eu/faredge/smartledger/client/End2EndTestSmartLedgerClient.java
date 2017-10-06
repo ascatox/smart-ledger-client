@@ -13,7 +13,7 @@ import static org.hamcrest.CoreMatchers.*;
 
 import static org.junit.Assert.*;
 
-public class SmartLedgerClientTest {
+public class End2EndTestSmartLedgerClient {
 
     static final String MYCHANNEL = "mychannel";
     static ISmartLedgerClient client = null;
@@ -22,7 +22,7 @@ public class SmartLedgerClientTest {
     public static void begin() {
         client = new SmartLedgerClient(MYCHANNEL);
         try {
-            // client.installChaincode(true, true);
+             client.installChaincode(true, false);
         } catch (Exception e) {
             assertFalse(e.getMessage(), true);
         }
