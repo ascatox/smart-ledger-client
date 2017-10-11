@@ -1,5 +1,6 @@
 package eu.faredge.smartledger.client.helper;
 
+import eu.faredge.smartledger.client.exception.SmartLedgerClientException;
 import eu.faredge.smartledger.client.model.SampleOrg;
 import eu.faredge.smartledger.client.model.SampleStore;
 import eu.faredge.smartledger.client.model.SampleUser;
@@ -9,10 +10,7 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
 import org.hyperledger.fabric.protos.ledger.rwset.kvrwset.KvRwset;
 import org.hyperledger.fabric.sdk.*;
-import org.hyperledger.fabric.sdk.exception.ChaincodeEndorsementPolicyParseException;
-import org.hyperledger.fabric.sdk.exception.InvalidArgumentException;
-import org.hyperledger.fabric.sdk.exception.InvalidProtocolBufferRuntimeException;
-import org.hyperledger.fabric.sdk.exception.ProposalException;
+import org.hyperledger.fabric.sdk.exception.*;
 import org.hyperledger.fabric.sdk.security.CryptoSuite;
 import org.hyperledger.fabric_ca.sdk.HFCAClient;
 
@@ -67,31 +65,33 @@ public class SmartLedgerClientHelper {
     }
 
 
-    public static void checkConfig() throws NoSuchFieldException, SecurityException, IllegalArgumentException,
-            IllegalAccessException, MalformedURLException, org.hyperledger
-                    .fabric_ca.sdk.exception.InvalidArgumentException {
+    public static void checkConfig() throws SmartLedgerClientException {
         Util.out("\n\n\nRUNNING: ISmartLedgerClient.\n");
 
-        chaincodeID = ChaincodeID.newBuilder().setName(CHAIN_CODE_NAME)
-                .setVersion(CHAIN_CODE_VERSION)
-                .setPath(CHAIN_CODE_PATH).build();
+        try {
+            chaincodeID = ChaincodeID.newBuilder().setName(CHAIN_CODE_NAME)
+                    .setVersion(CHAIN_CODE_VERSION)
+                    .setPath(CHAIN_CODE_PATH).build();
 
-        testSampleOrgs = testConfig.getIntegrationTestsSampleOrgs();
-        //Set up hfca for each sample org
+            testSampleOrgs = testConfig.getIntegrationTestsSampleOrgs();
+            //Set up hfca for each sample org
 
-        for (SampleOrg sampleOrg : testSampleOrgs) {
-            String caName = sampleOrg.getCAName(); //Try one of each name and no name.
-            if (caName != null && !caName.isEmpty()) {
-                sampleOrg.setCAClient(HFCAClient.createNewInstance(caName, sampleOrg.getCALocation(), sampleOrg
-                        .getCAProperties()));
-            } else {
-                sampleOrg.setCAClient(HFCAClient.createNewInstance(sampleOrg.getCALocation(), sampleOrg
-                        .getCAProperties()));
+            for (SampleOrg sampleOrg : testSampleOrgs) {
+                String caName = sampleOrg.getCAName(); //Try one of each name and no name.
+                if (caName != null && !caName.isEmpty()) {
+                    sampleOrg.setCAClient(HFCAClient.createNewInstance(caName, sampleOrg.getCALocation(), sampleOrg
+                            .getCAProperties()));
+                } else {
+                    sampleOrg.setCAClient(HFCAClient.createNewInstance(sampleOrg.getCALocation(), sampleOrg
+                            .getCAProperties()));
+                }
             }
+        } catch (Exception e) {
+            throw new SmartLedgerClientException(e);
         }
     }
 
-    public static void setup() {
+    public static void setup() throws SmartLedgerClientException {
         try {
 
             ////////////////////////////
@@ -166,17 +166,18 @@ public class SmartLedgerClientHelper {
             }
             sampleOrg = testConfig.getIntegrationTestsSampleOrg("peerOrg1"); //TODO
         } catch (Exception e) {
-            e.printStackTrace();
-            Util.fail(e.getMessage());
+            throw new SmartLedgerClientException(e);
         }
     }
 
-    public static List<String[]> queryChainCode(Channel channel, String functionName, String[] args) {
+    public static List<String[]> queryChainCode(Channel channel, String functionName, String[] args) throws
+            SmartLedgerClientException {
         return queryChainCode(client, channel, functionName, null, args);
     }
 
     private static List<String[]> queryChainCode(HFClient client, Channel channel, String functionName,
-                                                 BlockEvent.TransactionEvent transactionEvent, String[] args) {
+                                                 BlockEvent.TransactionEvent transactionEvent, String[] args) throws
+            SmartLedgerClientException {
         try {
             if (null != transactionEvent) {
                 waitOnFabric(0);
@@ -224,9 +225,8 @@ public class SmartLedgerClientHelper {
         } catch (Exception e) {
             Util.out("Caught exception while running query");
             e.printStackTrace();
-            Util.fail("Failed during chaincode query with error : " + e.getMessage());
+            throw new SmartLedgerClientException("Failed during chaincode query with error : " + e.getMessage());
         }
-        return null;
     }
 
     public static CompletableFuture<BlockEvent.TransactionEvent> invokeChaincode(Channel channel, String
@@ -239,114 +239,121 @@ public class SmartLedgerClientHelper {
                                                                                   ChaincodeID chaincodeID,
                                                                                   String functionName, String[]
                                                                                           args, User user) throws
-            Exception {
-        Collection<ProposalResponse> successful = new LinkedList<>();
-        Collection<ProposalResponse> failed = new LinkedList<>();
+            SmartLedgerClientException {
+        try {
+            Collection<ProposalResponse> successful = new LinkedList<>();
+            Collection<ProposalResponse> failed = new LinkedList<>();
 
-        ///////////////
-        /// Send transaction proposal to all peers
-        TransactionProposalRequest transactionProposalRequest = client.newTransactionProposalRequest();
-        transactionProposalRequest.setChaincodeID(chaincodeID);
-        transactionProposalRequest.setFcn(functionName);
-        transactionProposalRequest.setArgs(args);
-        transactionProposalRequest.setProposalWaitTime(testConfig.getProposalWaitTime());
-        if (user != null) { // specific user use that
-            transactionProposalRequest.setUserContext(user);
-        }
-        Util.out("sending transaction proposal to all peers with arguments: (" + StringUtils.join(args, ",") + "\"");
-
-
-        Collection<ProposalResponse> invokePropResp = channel.sendTransactionProposal(transactionProposalRequest);
-        for (ProposalResponse response : invokePropResp) {
-            if (response.getStatus() == ChaincodeResponse.Status.SUCCESS) {
-                Util.out("Successful transaction proposal response Txid: %s from peer %s", response
-                        .getTransactionID(), response.getPeer().getName());
-                successful.add(response);
-            } else {
-                failed.add(response);
+            ///////////////
+            /// Send transaction proposal to all peers
+            TransactionProposalRequest transactionProposalRequest = client.newTransactionProposalRequest();
+            transactionProposalRequest.setChaincodeID(chaincodeID);
+            transactionProposalRequest.setFcn(functionName);
+            transactionProposalRequest.setArgs(args);
+            transactionProposalRequest.setProposalWaitTime(testConfig.getProposalWaitTime());
+            if (user != null) { // specific user use that
+                transactionProposalRequest.setUserContext(user);
             }
-        }
+            Util.out("sending transaction proposal to all peers with arguments: (" + StringUtils.join(args, ",") +
+                    "\"");
 
-        Util.out("Received %d transaction proposal responses. Successful+verified: %d . Failed: %d",
-                invokePropResp.size(), successful.size(), failed.size());
-        if (failed.size() > 0) {
-            ProposalResponse firstTransactionProposalResponse = failed.iterator().next();
+            Collection<ProposalResponse> invokePropResp = channel.sendTransactionProposal(transactionProposalRequest);
+            for (ProposalResponse response : invokePropResp) {
+                if (response.getStatus() == ChaincodeResponse.Status.SUCCESS) {
+                    Util.out("Successful transaction proposal response Txid: %s from peer %s", response
+                            .getTransactionID(), response.getPeer().getName());
+                    successful.add(response);
+                } else {
+                    failed.add(response);
+                }
+            }
+            Util.out("Received %d transaction proposal responses. Successful+verified: %d . Failed: %d",
+                    invokePropResp.size(), successful.size(), failed.size());
+            if (failed.size() > 0) {
+                ProposalResponse firstTransactionProposalResponse = failed.iterator().next();
 
-            throw new ProposalException(format("Not enough endorsers for invoke(" + StringUtils.join(args, ",") + ")" +
-                            ":%d " +
-                            "endorser " +
-                            "error:%s. Was verified:%b",
-                    args[args.length - 1], firstTransactionProposalResponse.getStatus().getStatus(),
-                    firstTransactionProposalResponse.getMessage(),
-                    firstTransactionProposalResponse.isVerified()));
-        }
-        Util.out("Successfully received transaction proposal responses.");
+                throw new ProposalException(format("Not enough endorsers for invoke(" + StringUtils.join(args, ",") +
+                                ")" +
+                                ":%d " +
+                                "endorser " +
+                                "error:%s. Was verified:%b",
+                        args[args.length - 1], firstTransactionProposalResponse.getStatus().getStatus(),
+                        firstTransactionProposalResponse.getMessage(),
+                        firstTransactionProposalResponse.isVerified()));
+            }
+            Util.out("Successfully received transaction proposal responses.");
 
-        ////////////////////////////
-        // Send transaction to orderer
-        Util.out("Sending chaincode transaction " + functionName + " to orderer.");
-        if (user != null) {
-            return channel.sendTransaction(successful, user);
+            ////////////////////////////
+            // Send transaction to orderer
+            Util.out("Sending chaincode transaction " + functionName + " to orderer.");
+            if (user != null) {
+                return channel.sendTransaction(successful, user);
+            }
+            return channel.sendTransaction(successful);
+        } catch (Exception e) {
+            throw new SmartLedgerClientException(e);
         }
-        return channel.sendTransaction(successful);
     }
 
     public static Channel constructChannel(String name) throws Exception {
         return constructChannel(name, client, sampleOrg);
     }
 
-    private static Channel constructChannel(String name, HFClient client, SampleOrg sampleOrg) throws Exception {
+    private static Channel constructChannel(String name, HFClient client, SampleOrg sampleOrg) throws
+            SmartLedgerClientException {
         ////////////////////////////
         //Construct the channel
         //
-        Util.out("Constructing channel %s", name);
+        try {
+            Util.out("Constructing channel %s", name);
 
-        //Only peer Admin org
-        client.setUserContext(sampleOrg.getPeerAdmin());
+            //Only peer Admin org
+            client.setUserContext(sampleOrg.getPeerAdmin());
 
-        orderers = new LinkedList<>();
+            orderers = new LinkedList<>();
 
-        for (String orderName : sampleOrg.getOrdererNames()) {
+            for (String orderName : sampleOrg.getOrdererNames()) {
 
-            Properties ordererProperties = testConfig.getOrdererProperties(orderName);
+                Properties ordererProperties = testConfig.getOrdererProperties(orderName);
 
-            //example of setting keepAlive to avoid timeouts on inactive http2 connections.
-            // Under 5 minutes would require changes to server side to accept faster ping rates.
-            ordererProperties.put("grpc.NettyChannelBuilderOption.keepAliveTime", new Object[]{5L, TimeUnit.MINUTES});
-            ordererProperties.put("grpc.NettyChannelBuilderOption.keepAliveTimeout", new Object[]{8L, TimeUnit
-                    .SECONDS});
+                //example of setting keepAlive to avoid timeouts on inactive http2 connections.
+                // Under 5 minutes would require changes to server side to accept faster ping rates.
+                ordererProperties.put("grpc.NettyChannelBuilderOption.keepAliveTime", new Object[]{5L, TimeUnit
+                        .MINUTES});
+                ordererProperties.put("grpc.NettyChannelBuilderOption.keepAliveTimeout", new Object[]{8L, TimeUnit
+                        .SECONDS});
 
-            orderers.add(client.newOrderer(orderName, sampleOrg.getOrdererLocation(orderName),
-                    ordererProperties));
-        }
-
-        //Just pick the first orderer in the list to create the channel.
-
-        Orderer anOrderer = orderers.iterator().next();
-        Channel newChannel = client.getChannel(name);
-        if (null == newChannel) {
-            // @ascatox Constructs a new channel
-            newChannel = client.newChannel(name);
-        }
-        Util.out("Created channel %s", name);
-        newChannel.addOrderer(anOrderer);
-
-        for (String peerName : sampleOrg.getPeerNames()) {
-            String peerLocation = sampleOrg.getPeerLocation(peerName);
-
-            Properties peerProperties = testConfig.getPeerProperties(peerName); //test properties for peer.. if any.
-            if (peerProperties == null) {
-                peerProperties = new Properties();
+                orderers.add(client.newOrderer(orderName, sampleOrg.getOrdererLocation(orderName),
+                        ordererProperties));
             }
-            //Example of setting specific options on grpc's NettyChannelBuilder
-            peerProperties.put("grpc.NettyChannelBuilderOption.maxInboundMessageSize", 9000000);
 
-            Peer peer = client.newPeer(peerName, peerLocation, peerProperties);
-//            newChannel.joinPeer(peer);
-            newChannel.addPeer(peer);
-            Util.out("Peer %s joined channel %s", peerName, name);
-            sampleOrg.addPeer(peer);
-        }
+            //Just pick the first orderer in the list to create the channel.
+
+            Orderer anOrderer = orderers.iterator().next();
+            Channel newChannel = client.getChannel(name);
+            if (null == newChannel) {
+                // @ascatox Constructs a new channel
+                newChannel = client.newChannel(name);
+            }
+            Util.out("Created channel %s", name);
+            newChannel.addOrderer(anOrderer);
+
+            for (String peerName : sampleOrg.getPeerNames()) {
+                String peerLocation = sampleOrg.getPeerLocation(peerName);
+
+                Properties peerProperties = testConfig.getPeerProperties(peerName); //test properties for peer.. if any.
+                if (peerProperties == null) {
+                    peerProperties = new Properties();
+                }
+                //Example of setting specific options on grpc's NettyChannelBuilder
+                peerProperties.put("grpc.NettyChannelBuilderOption.maxInboundMessageSize", 9000000);
+
+                Peer peer = client.newPeer(peerName, peerLocation, peerProperties);
+                //            newChannel.joinPeer(peer);
+                newChannel.addPeer(peer);
+                Util.out("Peer %s joined channel %s", peerName, name);
+                sampleOrg.addPeer(peer);
+            }
 /*
         for (Orderer orderer : orderers) { //add remaining orderers if any.
             newChannel.addOrderer(orderer);
@@ -364,12 +371,18 @@ public class SmartLedgerClientHelper {
             newChannel.addEventHub(eventHub);
         }
 */
-        newChannel.initialize();
+            newChannel.initialize();
 
-        Util.out("Finished initialization channel %s", name);
+            Util.out("Finished initialization channel %s", name);
 
-        return newChannel;
-
+            return newChannel;
+        } catch (InvalidArgumentException e) {
+            throw new SmartLedgerClientException(e);
+        } catch (TransactionException e) {
+            throw new SmartLedgerClientException(e);
+        } catch (Exception e) {
+            throw new SmartLedgerClientException(e);
+        }
     }
 
     private static void waitOnFabric(int additional) {
@@ -534,8 +547,7 @@ public class SmartLedgerClientHelper {
         return ret;
     }
 
-    public static void installChaincode(Channel channel) throws ChaincodeEndorsementPolicyParseException,
-            InvalidArgumentException, ProposalException, IOException {
+    public static void installChaincode(Channel channel) throws SmartLedgerClientException {
         Collection<ProposalResponse> successful = new ArrayList<>();
         Collection<ProposalResponse> failed = new ArrayList<>();
         installChaincode(client, channel, sampleOrg, successful, failed);
@@ -543,67 +555,77 @@ public class SmartLedgerClientHelper {
 
     private static void installChaincode(HFClient client, Channel channel, SampleOrg sampleOrg,
                                          Collection<ProposalResponse> successful, Collection<ProposalResponse> failed)
-            throws InvalidArgumentException, ProposalException, IOException, ChaincodeEndorsementPolicyParseException {
+            throws SmartLedgerClientException {
         ////////////////////////////
         // Install Proposal Request
 
-        final String channelName = channel.getName();
-        boolean isFooChain = FOO_CHANNEL_NAME.equals(channelName);
-        Util.out("Running channel %s", channelName);
-        channel.setTransactionWaitTime(testConfig.getTransactionWaitTime());
-        channel.setDeployWaitTime(testConfig.getDeployWaitTime());
+        try {
+            final String channelName = channel.getName();
+            boolean isFooChain = FOO_CHANNEL_NAME.equals(channelName);
+            Util.out("Running channel %s", channelName);
+            channel.setTransactionWaitTime(testConfig.getTransactionWaitTime());
+            channel.setDeployWaitTime(testConfig.getDeployWaitTime());
 
-        Collection<ProposalResponse> responses;
-        //
+            Collection<ProposalResponse> responses;
+            //
 
-        client.setUserContext(sampleOrg.getPeerAdmin());
+            client.setUserContext(sampleOrg.getPeerAdmin());
 
-        Util.out("Creating install proposal");
+            Util.out("Creating install proposal");
 
-        InstallProposalRequest installProposalRequest = client.newInstallProposalRequest();
-        installProposalRequest.setChaincodeID(chaincodeID);
+            InstallProposalRequest installProposalRequest = client.newInstallProposalRequest();
+            installProposalRequest.setChaincodeID(chaincodeID);
 
-        String chaincodePathPrefix = finder.getString("CHAIN_CODE_PATH_PREFIX");
-        // "/sdkintegration/gocc/sample1";
-        if (isFooChain) {
-            // on foo chain install from directory.
-            ////For GO language and serving just a single user, chaincodeSource is mostly likely the users GOPATH
-            installProposalRequest.setChaincodeSourceLocation(new File(TEST_FIXTURES_PATH + chaincodePathPrefix));
-        } else {
-            // On bar chain install from an input stream.
-            installProposalRequest.setChaincodeInputStream(Util.generateTarGzInputStream(
-                    (Paths.get(TEST_FIXTURES_PATH, chaincodePathPrefix, "src", CHAIN_CODE_PATH).toFile()),
-                    Paths.get("src", CHAIN_CODE_PATH).toString()));
-        }
-
-        installProposalRequest.setChaincodeVersion(CHAIN_CODE_VERSION);
-        Util.out("Sending install proposal");
-
-        ////////////////////////////
-        // only a client from the same org as the peer can issue an install request
-        int numInstallProposal = 0;
-        //    Set<String> orgs = orgPeers.keySet();
-        //   for (SampleOrg org : testSampleOrgs) {
-
-        Set<Peer> peersFromOrg = sampleOrg.getPeers();
-        numInstallProposal = numInstallProposal + peersFromOrg.size();
-        responses = client.sendInstallProposal(installProposalRequest, peersFromOrg);
-
-        for (ProposalResponse response : responses) {
-            if (response.getStatus() == ProposalResponse.Status.SUCCESS) {
-                Util.out("Successful install proposal response Txid: %s from peer %s", response.getTransactionID(),
-                        response.getPeer().getName());
-                successful.add(response);
+            String chaincodePathPrefix = finder.getString("CHAIN_CODE_PATH_PREFIX");
+            // "/sdkintegration/gocc/sample1";
+            if (isFooChain) {
+                // on foo chain install from directory.
+                ////For GO language and serving just a single user, chaincodeSource is mostly likely the users GOPATH
+                installProposalRequest.setChaincodeSourceLocation(new File(TEST_FIXTURES_PATH + chaincodePathPrefix));
             } else {
-                failed.add(response);
+                // On bar chain install from an input stream.
+                installProposalRequest.setChaincodeInputStream(Util.generateTarGzInputStream(
+                        (Paths.get(TEST_FIXTURES_PATH, chaincodePathPrefix, "src", CHAIN_CODE_PATH).toFile()),
+                        Paths.get("src", CHAIN_CODE_PATH).toString()));
             }
-        }
-        //   }
-        Util.out("Received %d install proposal responses. Successful+verified: %d . Failed: %d", numInstallProposal,
-                successful.size(), failed.size());
-        if (failed.size() > 0) {
-            ProposalResponse first = failed.iterator().next();
-            Util.fail("Not enough endorsers for install :" + successful.size() + ".  " + first.getMessage());
+
+            installProposalRequest.setChaincodeVersion(CHAIN_CODE_VERSION);
+            Util.out("Sending install proposal");
+
+            ////////////////////////////
+            // only a client from the same org as the peer can issue an install request
+            int numInstallProposal = 0;
+            //    Set<String> orgs = orgPeers.keySet();
+            //   for (SampleOrg org : testSampleOrgs) {
+
+            Set<Peer> peersFromOrg = sampleOrg.getPeers();
+            numInstallProposal = numInstallProposal + peersFromOrg.size();
+            responses = client.sendInstallProposal(installProposalRequest, peersFromOrg);
+
+            for (ProposalResponse response : responses) {
+                if (response.getStatus() == ProposalResponse.Status.SUCCESS) {
+                    Util.out("Successful install proposal response Txid: %s from peer %s", response.getTransactionID(),
+                            response.getPeer().getName());
+                    successful.add(response);
+                } else {
+                    failed.add(response);
+                }
+            }
+            //   }
+            Util.out("Received %d install proposal responses. Successful+verified: %d . Failed: %d", numInstallProposal,
+                    successful.size(), failed.size());
+            if (failed.size() > 0) {
+                ProposalResponse first = failed.iterator().next();
+                Util.fail("Not enough endorsers for install :" + successful.size() + ".  " + first.getMessage());
+            }
+        } catch (InvalidArgumentException e) {
+            throw new SmartLedgerClientException(e);
+        } catch (IOException e) {
+            throw new SmartLedgerClientException(e);
+        } catch (ProposalException e) {
+            throw new SmartLedgerClientException(e);
+        } catch (Exception e) {
+            throw new SmartLedgerClientException(e);
         }
     }
 
@@ -619,7 +641,7 @@ public class SmartLedgerClientHelper {
     }
 
     public static CompletableFuture<BlockEvent.TransactionEvent> instantiateChaincode(Channel channel, String[] args)
-            throws Exception {
+            throws SmartLedgerClientException {
         Collection<ProposalResponse> successful = new ArrayList<>();
         Collection<ProposalResponse> failed = new ArrayList<>();
         return instantiateChaincode(client, channel, args, successful, failed, true, orderers);
@@ -633,63 +655,71 @@ public class SmartLedgerClientHelper {
                                                                                                failed, boolean
                                                                                                isFooChain,
                                                                                        Collection<Orderer> orderers)
-            throws InvalidArgumentException, IOException, ChaincodeEndorsementPolicyParseException,
-            ProposalException, ExecutionException, InterruptedException {
-        Collection<ProposalResponse> responses;///////////////
-        //// Instantiate chaincode.
-        InstantiateProposalRequest instantiateProposalRequest = client.newInstantiationProposalRequest();
-        instantiateProposalRequest.setProposalWaitTime(testConfig.getProposalWaitTime());
-        instantiateProposalRequest.setChaincodeID(chaincodeID);
-        String function = "init";
-        instantiateProposalRequest.setFcn(function);
-        instantiateProposalRequest.setArgs(args);
-        Map<String, byte[]> tm = new HashMap<>();
-        tm.put("HyperLedgerFabric", "InstantiateProposalRequest:JavaSDK".getBytes(UTF_8));
-        tm.put("method", "InstantiateProposalRequest".getBytes(UTF_8));
-        instantiateProposalRequest.setTransientMap(tm);
+            throws SmartLedgerClientException{
+        try {
+            Collection<ProposalResponse> responses;///////////////
+            //// Instantiate chaincode.
+            InstantiateProposalRequest instantiateProposalRequest = client.newInstantiationProposalRequest();
+            instantiateProposalRequest.setProposalWaitTime(testConfig.getProposalWaitTime());
+            instantiateProposalRequest.setChaincodeID(chaincodeID);
+            String function = "init";
+            instantiateProposalRequest.setFcn(function);
+            instantiateProposalRequest.setArgs(args);
+            Map<String, byte[]> tm = new HashMap<>();
+            tm.put("HyperLedgerFabric", "InstantiateProposalRequest:JavaSDK".getBytes(UTF_8));
+            tm.put("method", "InstantiateProposalRequest".getBytes(UTF_8));
+            instantiateProposalRequest.setTransientMap(tm);
 
-        ChaincodeEndorsementPolicy chaincodeEndorsementPolicy = new ChaincodeEndorsementPolicy();
-        chaincodeEndorsementPolicy.fromYamlFile(new File(TEST_FIXTURES_PATH +
-                "/sdkintegration/chaincodeendorsementpolicy.yaml"));
-        instantiateProposalRequest.setChaincodeEndorsementPolicy(chaincodeEndorsementPolicy);
+            ChaincodeEndorsementPolicy chaincodeEndorsementPolicy = new ChaincodeEndorsementPolicy();
+            chaincodeEndorsementPolicy.fromYamlFile(new File(TEST_FIXTURES_PATH +
+                    "/sdkintegration/chaincodeendorsementpolicy.yaml"));
+            instantiateProposalRequest.setChaincodeEndorsementPolicy(chaincodeEndorsementPolicy);
 
-        Util.out("Sending instantiateProposalRequest to all peers with arguments: " + StringUtils.join(args, ",") +
-                " %s" +
-                " " +
-                "respectively", "" + (200 + DELTA));
-        successful.clear();
-        failed.clear();
+            Util.out("Sending instantiateProposalRequest to all peers with arguments: " + StringUtils.join(args, ",") +
+                    " %s" +
+                    " " +
+                    "respectively", "" + (200 + DELTA));
+            successful.clear();
+            failed.clear();
 
-        if (isFooChain) {  //Send responses both ways with specifying peers and by using those on the channel.
-            responses = channel.sendInstantiationProposal(instantiateProposalRequest, channel.getPeers());
-        } else {
-            responses = channel.sendInstantiationProposal(instantiateProposalRequest);
-        }
-        for (ProposalResponse response : responses) {
-            if (response.isVerified() && response.getStatus() == ProposalResponse.Status.SUCCESS) {
-                successful.add(response);
-                Util.out("Successful instantiate proposal response Txid: %s from peer %s", response.getTransactionID()
-                        , response.getPeer().getName());
+            if (isFooChain) {  //Send responses both ways with specifying peers and by using those on the channel.
+                responses = channel.sendInstantiationProposal(instantiateProposalRequest, channel.getPeers());
             } else {
-                failed.add(response);
+                responses = channel.sendInstantiationProposal(instantiateProposalRequest);
             }
+            for (ProposalResponse response : responses) {
+                if (response.isVerified() && response.getStatus() == ProposalResponse.Status.SUCCESS) {
+                    successful.add(response);
+                    Util.out("Successful instantiate proposal response Txid: %s from peer %s", response.getTransactionID()
+                            , response.getPeer().getName());
+                } else {
+                    failed.add(response);
+                }
+            }
+            Util.out("Received %d instantiate proposal responses. Successful+verified: %d . Failed: %d", responses.size()
+                    , successful.size(), failed.size());
+            if (failed.size() > 0) {
+                ProposalResponse first = failed.iterator().next();
+                Util.fail(first.getMessage() + ". Was verified:" + first.isVerified());
+            }
+            ///////////////
+            /// Send instantiate transaction to orderer
+            Util.out("Sending instantiateTransaction to orderer %s respectively", "" + (200 + DELTA));
+            return channel.sendTransaction(successful, orderers);
+        } catch (InvalidArgumentException e) {
+            throw new SmartLedgerClientException(e);        } catch (IOException e) {
+            throw new SmartLedgerClientException(e);
+        } catch (ChaincodeEndorsementPolicyParseException e) {
+            throw new SmartLedgerClientException(e);
+        } catch (ProposalException e) {
+            throw new SmartLedgerClientException(e);
         }
-        Util.out("Received %d instantiate proposal responses. Successful+verified: %d . Failed: %d", responses.size()
-                , successful.size(), failed.size());
-        if (failed.size() > 0) {
-            ProposalResponse first = failed.iterator().next();
-            Util.fail(first.getMessage() + ". Was verified:" + first.isVerified());
-        }
-        ///////////////
-        /// Send instantiate transaction to orderer
-        Util.out("Sending instantiateTransaction to orderer %s respectively", "" + (200 + DELTA));
-        return channel.sendTransaction(successful, orderers);
     }
 
 
     public static CompletableFuture<BlockEvent.TransactionEvent> upgradeChaincode(Channel channel, String[] args
     )
-            throws Exception {
+            throws SmartLedgerClientException {
         Collection<ProposalResponse> successful = new ArrayList<>();
         Collection<ProposalResponse> failed = new ArrayList<>();
         return upgradeChaincode(client, channel, args, successful, failed, true, orderers);
@@ -703,55 +733,65 @@ public class SmartLedgerClientHelper {
                                                                                            failed, boolean
                                                                                            isFooChain,
                                                                                    Collection<Orderer> orderers)
-            throws Exception {
-        Collection<ProposalResponse> responses;
-        //// Upgrade chaincode.
-        UpgradeProposalRequest upgradeProposalRequest = client.newUpgradeProposalRequest();
-        upgradeProposalRequest.setProposalWaitTime(testConfig.getProposalWaitTime());
-        upgradeProposalRequest.setChaincodeID(chaincodeID);
-        String function = "init";
-        upgradeProposalRequest.setFcn(function);
-        upgradeProposalRequest.setArgs(args);
-        Map<String, byte[]> tm = new HashMap<>();
-        tm.put("HyperLedgerFabric", "UpgradeProposalRequest:JavaSDK".getBytes(UTF_8));
-        tm.put("method", "UpgradeProposalRequest".getBytes(UTF_8));
-        upgradeProposalRequest.setTransientMap(tm);
+            throws SmartLedgerClientException {
+        try {
+            Collection<ProposalResponse> responses;
+            //// Upgrade chaincode.
+            UpgradeProposalRequest upgradeProposalRequest = client.newUpgradeProposalRequest();
+            upgradeProposalRequest.setProposalWaitTime(testConfig.getProposalWaitTime());
+            upgradeProposalRequest.setChaincodeID(chaincodeID);
+            String function = "init";
+            upgradeProposalRequest.setFcn(function);
+            upgradeProposalRequest.setArgs(args);
+            Map<String, byte[]> tm = new HashMap<>();
+            tm.put("HyperLedgerFabric", "UpgradeProposalRequest:JavaSDK".getBytes(UTF_8));
+            tm.put("method", "UpgradeProposalRequest".getBytes(UTF_8));
+            upgradeProposalRequest.setTransientMap(tm);
 
-        ChaincodeEndorsementPolicy chaincodeEndorsementPolicy = new ChaincodeEndorsementPolicy();
-        chaincodeEndorsementPolicy.fromYamlFile(new File(TEST_FIXTURES_PATH +
-                "/sdkintegration/chaincodeendorsementpolicy.yaml"));
-        upgradeProposalRequest.setChaincodeEndorsementPolicy(chaincodeEndorsementPolicy);
+            ChaincodeEndorsementPolicy chaincodeEndorsementPolicy = new ChaincodeEndorsementPolicy();
+            chaincodeEndorsementPolicy.fromYamlFile(new File(TEST_FIXTURES_PATH +
+                    "/sdkintegration/chaincodeendorsementpolicy.yaml"));
+            upgradeProposalRequest.setChaincodeEndorsementPolicy(chaincodeEndorsementPolicy);
 
-        Util.out("Sending upgradeProposalRequest to all peers with arguments: " + StringUtils.join(args, ",") + " %s" +
-                " " +
-                "respectively", "" + (200 + DELTA));
-        successful.clear();
-        failed.clear();
+            Util.out("Sending upgradeProposalRequest to all peers with arguments: " + StringUtils.join(args, ",") + " %s" +
+                    " " +
+                    "respectively", "" + (200 + DELTA));
+            successful.clear();
+            failed.clear();
 
-        if (isFooChain) {  //Send responses both ways with specifying peers and by using those on the channel.
-            responses = channel.sendUpgradeProposal(upgradeProposalRequest, channel.getPeers());
-        } else {
-            responses = channel.sendUpgradeProposal(upgradeProposalRequest);
-        }
-        for (ProposalResponse response : responses) {
-            if (response.isVerified() && response.getStatus() == ProposalResponse.Status.SUCCESS) {
-                successful.add(response);
-                Util.out("Successful upgrade proposal response Txid: %s from peer %s", response.getTransactionID()
-                        , response.getPeer().getName());
+            if (isFooChain) {  //Send responses both ways with specifying peers and by using those on the channel.
+                responses = channel.sendUpgradeProposal(upgradeProposalRequest, channel.getPeers());
             } else {
-                failed.add(response);
+                responses = channel.sendUpgradeProposal(upgradeProposalRequest);
             }
+            for (ProposalResponse response : responses) {
+                if (response.isVerified() && response.getStatus() == ProposalResponse.Status.SUCCESS) {
+                    successful.add(response);
+                    Util.out("Successful upgrade proposal response Txid: %s from peer %s", response.getTransactionID()
+                            , response.getPeer().getName());
+                } else {
+                    failed.add(response);
+                }
+            }
+            Util.out("Received %d upgrade proposal responses. Successful+verified: %d . Failed: %d", responses.size()
+                    , successful.size(), failed.size());
+            if (failed.size() > 0) {
+                ProposalResponse first = failed.iterator().next();
+                Util.fail(first.getMessage() + ". Was verified:" + first.isVerified());
+            }
+            ///////////////
+            /// Send upgrade transaction to orderer
+            Util.out("Sending upgradeTransaction to orderer %s respectively", "" + (200 + DELTA));
+            return channel.sendTransaction(successful, orderers);
+        } catch (InvalidArgumentException e) {
+            throw new SmartLedgerClientException(e);
+        } catch (IOException e) {
+            throw new SmartLedgerClientException(e);
+        } catch (ChaincodeEndorsementPolicyParseException e) {
+            throw new SmartLedgerClientException(e);
+        } catch (ProposalException e) {
+            throw new SmartLedgerClientException(e);
         }
-        Util.out("Received %d upgrade proposal responses. Successful+verified: %d . Failed: %d", responses.size()
-                , successful.size(), failed.size());
-        if (failed.size() > 0) {
-            ProposalResponse first = failed.iterator().next();
-            Util.fail(first.getMessage() + ". Was verified:" + first.isVerified());
-        }
-        ///////////////
-        /// Send upgrade transaction to orderer
-        Util.out("Sending upgradeTransaction to orderer %s respectively", "" + (200 + DELTA));
-        return channel.sendTransaction(successful, orderers);
     }
 
 }
