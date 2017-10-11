@@ -4,6 +4,7 @@
 package eu.faredge.smartledger.client;
 
 import eu.faredge.smartledger.client.base.ISmartLedgerClient;
+import eu.faredge.smartledger.client.exception.SmartLedgerClientException;
 import eu.faredge.smartledger.client.model.DCM;
 import eu.faredge.smartledger.client.model.DSM;
 import org.junit.*;
@@ -23,7 +24,7 @@ public class End2EndTestSmartLedgerClient {
         client = new SmartLedgerClient(MYCHANNEL);
         try {
              client.installChaincode(true, false);
-        } catch (Exception e) {
+        } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);
         }
     }
@@ -40,7 +41,7 @@ public class End2EndTestSmartLedgerClient {
             DSM dataSourceManifestByUri = client.getDataSourceManifestByUri(uri);
             assertNotNull(dataSourceManifestByUri);
             assertFalse(dataSourceManifestByUri.isEmpty());
-        } catch (Exception e) {
+        } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);
         }
     }
@@ -52,7 +53,7 @@ public class End2EndTestSmartLedgerClient {
             DCM dataConsumerManifestByUri = client.getDataConsumerManifestByUri(uri);
             assertNotNull(dataConsumerManifestByUri);
             assertFalse(dataConsumerManifestByUri.isEmpty());
-        } catch (Exception e) {
+        } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);
         }
     }
@@ -64,7 +65,7 @@ public class End2EndTestSmartLedgerClient {
             DSM dataSourceManifestByMacAddress = client.getDataSourceManifestByMacAddress(mac);
             assertNotNull(dataSourceManifestByMacAddress);
             assertFalse(dataSourceManifestByMacAddress.isEmpty());
-        } catch (Exception e) {
+        } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);
         }
     }
@@ -77,7 +78,7 @@ public class End2EndTestSmartLedgerClient {
             DCM dataConsumerManifestByMacAddress = client.getDataConsumerManifestByMacAddress(mac);
             assertNotNull(dataConsumerManifestByMacAddress);
             assertFalse(dataConsumerManifestByMacAddress.isEmpty());
-        } catch (Exception e) {
+        } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);
         }
     }
@@ -88,7 +89,7 @@ public class End2EndTestSmartLedgerClient {
             List<DSM> allDSMs = client.getAllDataSourceManifests();
             assertNotNull(allDSMs);
             assertFalse(allDSMs.isEmpty());
-        } catch (Exception e) {
+        } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);
         }
     }
@@ -102,7 +103,7 @@ public class End2EndTestSmartLedgerClient {
             List<DSM> allDSMs = client.getAllDataSourceManifests();
             assertNotNull(allDSMs);
             assertFalse(allDSMs.isEmpty());
-        } catch (Exception e) {
+        } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);
         }
     }
@@ -117,7 +118,7 @@ public class End2EndTestSmartLedgerClient {
             DSM dsmBack = client.getDataSourceManifestByUri(dsm.getUri());
             assertNotNull(dsmBack);
             assertFalse(dsmBack.isEmpty());
-        } catch (Exception e) {
+        } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);
         }
     }
@@ -132,7 +133,7 @@ public class End2EndTestSmartLedgerClient {
             DSM dsmBack = client.getDataSourceManifestByUri(dsm.getUri());
             assertNull(dsmBack);
             assertTrue(dsmBack.isEmpty());
-        } catch (Exception e) {
+        } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);
         }
     }
@@ -148,7 +149,7 @@ public class End2EndTestSmartLedgerClient {
             client.editRegisteredDSM(dsm);
             DSM dsmBack2 = client.getDataSourceManifestByUri(dsm.getUri());
             assertNotEquals(dsmBack2, not(dsm));
-        } catch (Exception e) {
+        } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);
         }
     }

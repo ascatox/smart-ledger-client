@@ -30,7 +30,7 @@ public class SmartLedgerClient implements ISmartLedgerClient {
             channel = helper.constructChannel(channelName);
             validator = new Validator();
         } catch (Exception e) {
-            e.printStackTrace();
+            Util.fail(e.getMessage());
         }
     }
 
