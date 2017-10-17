@@ -53,9 +53,9 @@ public class TestConfig {
 
     private static final String PROPBASE = "org.hyperledger.fabric.sdktest.";
 
-    private static final String INVOKEWAITTIME = PROPBASE + "InvokeWaitTime";
-    private static final String DEPLOYWAITTIME = PROPBASE + "DeployWaitTime";
-    private static final String PROPOSALWAITTIME = PROPBASE + "ProposalWaitTime";
+    public static final String INVOKEWAITTIME = PROPBASE + "InvokeWaitTime";
+    public static final String DEPLOYWAITTIME = PROPBASE + "DeployWaitTime";
+    public static final String PROPOSALWAITTIME = PROPBASE + "ProposalWaitTime";
 
     private static final String INTEGRATIONTESTS_ORG = PROPBASE + "integrationTests.org.";
     private static final Pattern orgPat = Pattern.compile("^" + Pattern.quote(INTEGRATIONTESTS_ORG) + "([^\\.]+)\\" +
@@ -69,7 +69,9 @@ public class TestConfig {
     private final boolean runningFabricTLS;
     private static final HashMap<String, SampleOrg> sampleOrgs = new HashMap<>();
 
-    private TestConfig() {
+    public static final Integer TIMEOUT = Integer.parseInt(finder.getString("TIMEOUT"));
+
+    public TestConfig() {
         File loadFile;
         FileInputStream configProps;
 

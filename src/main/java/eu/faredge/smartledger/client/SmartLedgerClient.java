@@ -7,17 +7,23 @@ import eu.faredge.smartledger.client.exception.SmartLedgerClientException;
 import eu.faredge.smartledger.client.helper.SmartLedgerClientHelper;
 import eu.faredge.smartledger.client.model.DCM;
 import eu.faredge.smartledger.client.model.DSM;
+import eu.faredge.smartledger.client.testutils.TestConfig;
 import eu.faredge.smartledger.client.util.Util;
 import eu.faredge.smartledger.client.util.Validator;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.concurrent.ConcurrentException;
 import org.hyperledger.fabric.sdk.BlockEvent;
 import org.hyperledger.fabric.sdk.Channel;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class SmartLedgerClient implements ISmartLedgerClient {
 
+    public static final int TIMEOUT = TestConfig.TIMEOUT;
     private SmartLedgerClientHelper helper;
     private Channel channel;
     private Validator validator;
@@ -61,12 +67,10 @@ public class SmartLedgerClient implements ISmartLedgerClient {
         try {
             transactionEventCompletableFuture = SmartLedgerClientHelper
                     .instantiateOrUpgradeChaincode(channel, args, isUpgrade);
-        } catch (Exception e) {
-           Util.out(e.getMessage());
-           throw new SmartLedgerClientException(e);
-        }
-        BlockEvent.TransactionEvent event = null;
-        transactionEventCompletableFuture.thenAccept((transactionEvent) -> {
+
+            BlockEvent.TransactionEvent event = null;
+            transactionEventCompletableFuture.get(TIMEOUT, TimeUnit.SECONDS);
+                /*.thenAccept((transactionEvent) -> {
             if (isUpgrade)
                 Util.out("Chaincode upgraded correctly :-)");
             else
@@ -74,7 +78,13 @@ public class SmartLedgerClient implements ISmartLedgerClient {
         }).exceptionally((error) -> {
             Util.out(error.getMessage());
             return null;
-        });
+        });*/
+        } catch (TimeoutException | InterruptedException | ExecutionException e) {
+            Util.out(e.getMessage());
+        } catch (Exception e) {
+            Util.out(e.getMessage());
+            throw new SmartLedgerClientException(e);
+        }
     }
 
     /**
@@ -138,7 +148,7 @@ public class SmartLedgerClient implements ISmartLedgerClient {
      * @return
      */
     @Override
-    public DCM getDataConsumerManifestByUri(String uri) throws SmartLedgerClientException{
+    public DCM getDataConsumerManifestByUri(String uri) throws SmartLedgerClientException {
         if (StringUtils.isEmpty(uri))
             throw new IllegalArgumentException("Error in method getDataConsumerManifestByUri " +
                     "uri " +
@@ -190,12 +200,9 @@ public class SmartLedgerClient implements ISmartLedgerClient {
         BlockEvent.TransactionEvent event = null;
         try {
             SmartLedgerClientHelper.invokeChaincode(channel,
-                    "iEditDSM", args).thenAccept(transactionEvent -> {
-                Util.out("Register DSM completed successfully ");
-            }).exceptionally((error) -> {
-                Util.out(error.getMessage());
-                return null;
-            });
+                    "iEditDSM", args).get(TIMEOUT, TimeUnit.SECONDS);
+        } catch (TimeoutException | InterruptedException | ExecutionException | ConcurrentException e) {
+            Util.out(e.getMessage());
         } catch (Exception e) {
             Util.out(e.getMessage());
             throw new SmartLedgerClientException(e);
@@ -219,12 +226,10 @@ public class SmartLedgerClient implements ISmartLedgerClient {
         BlockEvent.TransactionEvent event = null;
         try {
             SmartLedgerClientHelper.invokeChaincode(channel,
-                    "iEditDCM", args).thenAccept(transactionEvent -> {
-                Util.out("Register DCM completed successfully ");
-            }).exceptionally((error) -> {
-                Util.fail(error.getMessage());
-                return null;
-            });
+                    "iEditDCM", args)
+                    .get(TIMEOUT, TimeUnit.SECONDS);
+        } catch (TimeoutException | InterruptedException | ExecutionException | ConcurrentException e) {
+            Util.out(e.getMessage());
         } catch (Exception e) {
             Util.out(e.getMessage());
             throw new SmartLedgerClientException(e);
@@ -278,15 +283,12 @@ public class SmartLedgerClient implements ISmartLedgerClient {
         BlockEvent.TransactionEvent event = null;
         try {
             SmartLedgerClientHelper.invokeChaincode(channel,
-                    "iRemoveDSM", args).thenAccept(transactionEvent -> {
-                Util.out("Remove DSM completed successfully  with uri: " + uri);
-            }).exceptionally((error) -> {
-                Util.fail(error.getMessage());
-                return null;
-            });
+                    "iRemoveDSM", args).get(TIMEOUT, TimeUnit.SECONDS);
+        } catch (TimeoutException | InterruptedException | ExecutionException | ConcurrentException e) {
+            Util.out(e.getMessage());
         } catch (Exception e) {
             Util.out(e.getMessage());
-            throw new SmartLedgerClientException(e.getMessage());
+            throw new SmartLedgerClientException("Error removing DSM: " + e.getMessage());
         }
     }
 
@@ -304,15 +306,12 @@ public class SmartLedgerClient implements ISmartLedgerClient {
         BlockEvent.TransactionEvent event = null;
         try {
             SmartLedgerClientHelper.invokeChaincode(channel,
-                    "iRemoveDCM", args).thenAccept(transactionEvent -> {
-                Util.out("Remove DCM completed successfully  with uri: " + uri);
-            }).exceptionally((error) -> {
-                Util.fail(error.getMessage());
-                return null;
-            });
+                    "iRemoveDCM", args).get(TIMEOUT, TimeUnit.SECONDS);
+        } catch (TimeoutException | InterruptedException | ExecutionException | ConcurrentException e) {
+            Util.out(e.getMessage());
         } catch (Exception e) {
             Util.out(e.getMessage());
-            throw new SmartLedgerClientException(e.getMessage());
+            throw new SmartLedgerClientException("Error removing DCM " + e.getMessage());
         }
     }
 

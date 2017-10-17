@@ -16,11 +16,9 @@ import org.hyperledger.fabric_ca.sdk.HFCAClient;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static java.lang.String.format;
@@ -558,7 +556,6 @@ public class SmartLedgerClientHelper {
             throws SmartLedgerClientException {
         ////////////////////////////
         // Install Proposal Request
-
         try {
             final String channelName = channel.getName();
             boolean isFooChain = FOO_CHANNEL_NAME.equals(channelName);
@@ -633,7 +630,7 @@ public class SmartLedgerClientHelper {
     public static CompletableFuture<BlockEvent.TransactionEvent> instantiateOrUpgradeChaincode(Channel channel,
                                                                                                String[] args, boolean
                                                                                                        isUpgrade)
-            throws Exception {
+            throws SmartLedgerClientException {
         if (isUpgrade)
             return upgradeChaincode(channel, args);
         else
@@ -655,7 +652,7 @@ public class SmartLedgerClientHelper {
                                                                                                failed, boolean
                                                                                                isFooChain,
                                                                                        Collection<Orderer> orderers)
-            throws SmartLedgerClientException{
+            throws SmartLedgerClientException {
         try {
             Collection<ProposalResponse> responses;///////////////
             //// Instantiate chaincode.
@@ -690,13 +687,15 @@ public class SmartLedgerClientHelper {
             for (ProposalResponse response : responses) {
                 if (response.isVerified() && response.getStatus() == ProposalResponse.Status.SUCCESS) {
                     successful.add(response);
-                    Util.out("Successful instantiate proposal response Txid: %s from peer %s", response.getTransactionID()
+                    Util.out("Successful instantiate proposal response Txid: %s from peer %s", response
+                                    .getTransactionID()
                             , response.getPeer().getName());
                 } else {
                     failed.add(response);
                 }
             }
-            Util.out("Received %d instantiate proposal responses. Successful+verified: %d . Failed: %d", responses.size()
+            Util.out("Received %d instantiate proposal responses. Successful+verified: %d . Failed: %d", responses
+                            .size()
                     , successful.size(), failed.size());
             if (failed.size() > 0) {
                 ProposalResponse first = failed.iterator().next();
@@ -707,11 +706,14 @@ public class SmartLedgerClientHelper {
             Util.out("Sending instantiateTransaction to orderer %s respectively", "" + (200 + DELTA));
             return channel.sendTransaction(successful, orderers);
         } catch (InvalidArgumentException e) {
-            throw new SmartLedgerClientException(e);        } catch (IOException e) {
+            throw new SmartLedgerClientException(e);
+        } catch (IOException e) {
             throw new SmartLedgerClientException(e);
         } catch (ChaincodeEndorsementPolicyParseException e) {
             throw new SmartLedgerClientException(e);
         } catch (ProposalException e) {
+            throw new SmartLedgerClientException(e);
+        } catch (Exception e) {
             throw new SmartLedgerClientException(e);
         }
     }
@@ -753,7 +755,8 @@ public class SmartLedgerClientHelper {
                     "/sdkintegration/chaincodeendorsementpolicy.yaml"));
             upgradeProposalRequest.setChaincodeEndorsementPolicy(chaincodeEndorsementPolicy);
 
-            Util.out("Sending upgradeProposalRequest to all peers with arguments: " + StringUtils.join(args, ",") + " %s" +
+            Util.out("Sending upgradeProposalRequest to all peers with arguments: " + StringUtils.join(args, ",") + "" +
+                    " %s" +
                     " " +
                     "respectively", "" + (200 + DELTA));
             successful.clear();
@@ -790,6 +793,8 @@ public class SmartLedgerClientHelper {
         } catch (ChaincodeEndorsementPolicyParseException e) {
             throw new SmartLedgerClientException(e);
         } catch (ProposalException e) {
+            throw new SmartLedgerClientException(e);
+        } catch (Exception e) {
             throw new SmartLedgerClientException(e);
         }
     }

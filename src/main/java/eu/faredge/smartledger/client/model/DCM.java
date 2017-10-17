@@ -8,6 +8,9 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Pattern;
 import java.io.Serializable;
 
+/**
+ * Data Consumer Manifest is a manifest used to describe technologies consuming data.
+ */
 public class DCM implements Serializable {
 
     @NotEmpty(message = Validator.PHYSICAL_ARTIFACT_CANNOT_BE_EMPTY_MESSAGE)
@@ -46,6 +49,7 @@ public class DCM implements Serializable {
         this.uri = ""; //Primary Key
         this.macAddress = "";
         this.dsds = "";
+        this.type = "DCM";
 
     }
 

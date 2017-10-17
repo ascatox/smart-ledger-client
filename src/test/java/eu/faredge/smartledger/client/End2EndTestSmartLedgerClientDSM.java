@@ -14,7 +14,7 @@ import static org.hamcrest.CoreMatchers.*;
 
 import static org.junit.Assert.*;
 
-public class End2EndTestSmartLedgerClient {
+public class End2EndTestSmartLedgerClientDSM {
 
     static final String MYCHANNEL = "mychannel";
     static ISmartLedgerClient client = null;
@@ -22,11 +22,11 @@ public class End2EndTestSmartLedgerClient {
     @BeforeClass
     public static void begin() {
         client = new SmartLedgerClient(MYCHANNEL);
-        try {
-             client.installChaincode(true, false);
+        /*try {
+             client.installChaincode(false, false);
         } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);
-        }
+        }*/
     }
 
     @AfterClass
@@ -47,18 +47,6 @@ public class End2EndTestSmartLedgerClient {
     }
 
     @Test
-    public void testGetDataConsumerManifestByUri() {
-        try {
-            String uri = "http://www.eng.it";
-            DCM dataConsumerManifestByUri = client.getDataConsumerManifestByUri(uri);
-            assertNotNull(dataConsumerManifestByUri);
-            assertFalse(dataConsumerManifestByUri.isEmpty());
-        } catch (SmartLedgerClientException e) {
-            assertFalse(e.getMessage(), true);
-        }
-    }
-
-    @Test
     public void testGetDataSourceManifestByMacAddress() {
         try {
             String mac = "123:456:789";
@@ -70,18 +58,6 @@ public class End2EndTestSmartLedgerClient {
         }
     }
 
-
-    @Test
-    public void testGetDataConsumerManifestByMacAddress() {
-        try {
-            String mac = "321:654:987";
-            DCM dataConsumerManifestByMacAddress = client.getDataConsumerManifestByMacAddress(mac);
-            assertNotNull(dataConsumerManifestByMacAddress);
-            assertFalse(dataConsumerManifestByMacAddress.isEmpty());
-        } catch (SmartLedgerClientException e) {
-            assertFalse(e.getMessage(), true);
-        }
-    }
 
     @Test
     public void testGetAllDataSourceManifests() {
@@ -112,8 +88,11 @@ public class End2EndTestSmartLedgerClient {
     public void testRegisterDSMByUri() {
         SmartLedgerClient client = new SmartLedgerClient(MYCHANNEL);
         try {
-            DSM dsm = initDSM();
-            client.installChaincode(true, true);
+            DSM dsm = new DSM();
+            dsm.setPhysicalArtifact("DEVICE20");
+            dsm.setUri("http://www.mht.it");
+            dsm.setMacAddress("b8:e8:56:41:43:05");
+            dsm.setConnectionParameters("connectionVals:21121");
             client.registerDSM(dsm);
             DSM dsmBack = client.getDataSourceManifestByUri(dsm.getUri());
             assertNotNull(dsmBack);
@@ -128,11 +107,22 @@ public class End2EndTestSmartLedgerClient {
     public void testRemoveDSM() {
         SmartLedgerClient client = new SmartLedgerClient(MYCHANNEL);
         try {
-            DSM dsm = initDSM();
+            DSM dsm = new DSM();
+            dsm.setPhysicalArtifact("DEVICE10");
+            dsm.setUri("http://www.eng-mo.it");
+            dsm.setMacAddress("b8:e8:56:41:43:07");
+            dsm.setConnectionParameters("connectionVals:21121");
+            client.registerDSM(dsm);
             client.removeDSM(dsm.getUri());
-            DSM dsmBack = client.getDataSourceManifestByUri(dsm.getUri());
+            DSM dsmBack = null;
+            try {
+                dsmBack = client.getDataSourceManifestByUri(dsm.getUri());
+            } catch (SmartLedgerClientException e) {
+                e.printStackTrace();
+            } catch (Exception e){
+                e.printStackTrace();
+            }
             assertNull(dsmBack);
-            assertTrue(dsmBack.isEmpty());
         } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);
         }
@@ -142,7 +132,11 @@ public class End2EndTestSmartLedgerClient {
     public void testEditRegisteredDSMWhenIsPresent() {
         SmartLedgerClient client = new SmartLedgerClient(MYCHANNEL);
         try {
-            DSM dsm = initDSM();
+            DSM dsm = new DSM();
+            dsm.setPhysicalArtifact("DEVICE10");
+            dsm.setUri("http://www.eng-mo.it");
+            dsm.setMacAddress("b8:e8:56:41:43:07");
+            dsm.setConnectionParameters("connectionVals:21121");
             client.registerDSM(dsm);
             DSM dsmBack = client.getDataSourceManifestByUri(dsm.getUri());
             assertEquals(dsm, dsmBack);

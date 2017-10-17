@@ -119,10 +119,12 @@ public class Util {
     }
 
     public static void out(String format, Object... args) {
+        if (StringUtils.isEmpty(format) || null == args) return;
         System.err.flush();
         System.out.flush();
 
-        System.out.println(format(format, args));
+        if (StringUtils.isNotEmpty(format) && null != args)
+            System.out.println(format(format, args));
         System.err.flush();
         System.out.flush();
 
