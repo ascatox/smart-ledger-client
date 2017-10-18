@@ -53,7 +53,6 @@ public final class DSM implements Serializable {
     }
 
     public DSM() {
-
         this.physicalArtifact = "";
         this.uri = "";
         this.macAddress = "";
