@@ -6,6 +6,6 @@ In order to use the Library, launch Fabric as described in the [official docs](h
 
 The [Chaincode](https://github.com/ascatox/smart-ledger-client/blob/master/src/main/java/fixture/sdkintegration/gocc/smartfactory/src/github.com/smartfactory/smartfactory.go) in Go Language, to interact with the Smart Factory Lab, is bundled with the project.
 
-The JavaDoc documentation of the library, is present in the `doc` folder of the project.
+The **JavaDoc** documentation of the library, is present in the `doc` folder of the project.
 
 Happy Blockchain 😄
