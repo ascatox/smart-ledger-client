@@ -313,7 +313,6 @@ public class SmartLedgerClientHelper {
             for (String orderName : sampleOrg.getOrdererNames()) {
 
                 Properties ordererProperties = testConfig.getOrdererProperties(orderName);
-
                 //example of setting keepAlive to avoid timeouts on inactive http2 connections.
                 // Under 5 minutes would require changes to server side to accept faster ping rates.
                 ordererProperties.put("grpc.NettyChannelBuilderOption.keepAliveTime", new Object[]{5L, TimeUnit
@@ -352,25 +351,25 @@ public class SmartLedgerClientHelper {
                 Util.out("Peer %s joined channel %s", peerName, name);
                 sampleOrg.addPeer(peer);
             }
-/*
-        for (Orderer orderer : orderers) { //add remaining orderers if any.
-            newChannel.addOrderer(orderer);
-        }
-      for (String eventHubName : sampleOrg.getEventHubNames()) {
 
-            final Properties eventHubProperties = testConfig.getEventHubProperties(eventHubName);
+            for (Orderer orderer : orderers) { //add remaining orderers if any.
+                if (!orderer.equals(anOrderer))
+                    newChannel.addOrderer(orderer);
+            }
+            for (String eventHubName : sampleOrg.getEventHubNames()) {
 
-            eventHubProperties.put("grpc.NettyChannelBuilderOption.keepAliveTime", new Object[]{5L, TimeUnit.MINUTES});
-            eventHubProperties.put("grpc.NettyChannelBuilderOption.keepAliveTimeout", new Object[]{8L, TimeUnit
-            .SECONDS});
+                final Properties eventHubProperties = testConfig.getEventHubProperties(eventHubName);
 
-            EventHub eventHub = client.newEventHub(eventHubName, sampleOrg.getEventHubLocation(eventHubName),
-                    eventHubProperties);
-            newChannel.addEventHub(eventHub);
-        }
-*/
+                eventHubProperties.put("grpc.NettyChannelBuilderOption.keepAliveTime", new Object[]{5L, TimeUnit
+                        .MINUTES});
+                eventHubProperties.put("grpc.NettyChannelBuilderOption.keepAliveTimeout", new Object[]{8L, TimeUnit
+                        .SECONDS});
+
+                EventHub eventHub = client.newEventHub(eventHubName, sampleOrg.getEventHubLocation(eventHubName),
+                        eventHubProperties);
+                newChannel.addEventHub(eventHub);
+            }
             newChannel.initialize();
-
             Util.out("Finished initialization channel %s", name);
 
             return newChannel;
