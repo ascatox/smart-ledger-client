@@ -21,12 +21,12 @@ public class End2EndTestSmartLedgerClientDSM {
 
     @BeforeClass
     public static void begin() {
-        client = new SmartLedgerClient(MYCHANNEL);
-        /*try {
-             client.installChaincode(false, false);
-        } catch (SmartLedgerClientException e) {
-            assertFalse(e.getMessage(), true);
-        }*/
+        client = new SmartLedgerClient(MYCHANNEL, "smartLedgerUser3", "");
+//     try {
+//             client.installChaincode(true, false);
+//        } catch (SmartLedgerClientException e) {
+//            assertFalse(e.getMessage(), true);
+//        }
     }
 
     @AfterClass
@@ -72,7 +72,6 @@ public class End2EndTestSmartLedgerClientDSM {
 
     @Test
     public void testRegisterDSM() {
-        SmartLedgerClient client = new SmartLedgerClient(MYCHANNEL);
         try {
             DSM dsm = initDSM();
             client.registerDSM(dsm);
@@ -86,7 +85,6 @@ public class End2EndTestSmartLedgerClientDSM {
 
     @Test
     public void testRegisterDSMByUri() {
-        SmartLedgerClient client = new SmartLedgerClient(MYCHANNEL);
         try {
             DSM dsm = new DSM();
             dsm.setPhysicalArtifact("DEVICE20");
@@ -105,7 +103,6 @@ public class End2EndTestSmartLedgerClientDSM {
 
     @Test
     public void testRemoveDSM() {
-        SmartLedgerClient client = new SmartLedgerClient(MYCHANNEL);
         try {
             DSM dsm = new DSM();
             dsm.setPhysicalArtifact("DEVICE10");
@@ -130,7 +127,6 @@ public class End2EndTestSmartLedgerClientDSM {
 
     @Test
     public void testEditRegisteredDSMWhenIsPresent() {
-        SmartLedgerClient client = new SmartLedgerClient(MYCHANNEL);
         try {
             DSM dsm = new DSM();
             dsm.setPhysicalArtifact("DEVICE10");

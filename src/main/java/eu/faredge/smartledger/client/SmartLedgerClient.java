@@ -5,8 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.faredge.smartledger.client.base.ISmartLedgerClient;
 import eu.faredge.smartledger.client.exception.SmartLedgerClientException;
 import eu.faredge.smartledger.client.helper.SmartLedgerClientHelper;
-import eu.faredge.smartledger.client.model.DCM;
-import eu.faredge.smartledger.client.model.DSM;
+import eu.faredge.smartledger.client.model.*;
 import eu.faredge.smartledger.client.testutils.TestConfig;
 import eu.faredge.smartledger.client.util.Util;
 import eu.faredge.smartledger.client.util.Validator;
@@ -15,11 +14,14 @@ import org.apache.commons.lang3.concurrent.ConcurrentException;
 import org.hyperledger.fabric.sdk.BlockEvent;
 import org.hyperledger.fabric.sdk.Channel;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import static java.lang.String.format;
 
 public class SmartLedgerClient implements ISmartLedgerClient {
 
@@ -27,18 +29,27 @@ public class SmartLedgerClient implements ISmartLedgerClient {
     private SmartLedgerClientHelper helper;
     private Channel channel;
     private Validator validator;
+    private static List<SampleOrg> sampleOrgs;
+    private static final TestConfig testConfig = TestConfig.getConfig();
 
-    public SmartLedgerClient(String channelName) {
-        helper = new SmartLedgerClientHelper();
+    public SmartLedgerClient(String channelName, String username, String enrollmentSecret) {
         try {
-            helper.checkConfig();
-            helper.setup();
-            channel = helper.constructChannel(channelName);
+            if (StringUtils.isEmpty(username))
+                throw new SmartLedgerClientException("Username not given, Please give me an authorized User!");
             validator = new Validator();
+            sampleOrgs = new ArrayList<>();
+            helper = new SmartLedgerClientHelper();
+            sampleOrgs.addAll(testConfig.getIntegrationTestsSampleOrgs());
+            for (SampleOrg sampleOrg : sampleOrgs) {
+                helper.checkConfig(sampleOrg);
+                helper.setup(sampleOrg, username, enrollmentSecret);
+                channel = helper.initializeChannel(channelName, sampleOrg);
+            }
         } catch (Exception e) {
             Util.fail(e.getMessage());
         }
     }
+
 
     /**
      * Installation function for the chaincode link @
@@ -49,7 +60,7 @@ public class SmartLedgerClient implements ISmartLedgerClient {
      */
     @Override
     public void installChaincode(boolean instantiate, boolean upgrade) throws SmartLedgerClientException {
-        SmartLedgerClientHelper.installChaincode(channel);
+        SmartLedgerClientHelper.installChaincode(channel, sampleOrgs.get(0)); //TODO Only the first
         Util.out("Chaincode installed correctly!!!");
         if (instantiate) {
             instantiateOrUpgradeChaincode(upgrade);

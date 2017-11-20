@@ -7,16 +7,18 @@ var util = require('util');
 var os = require('os');
 
 var argv = require('yargs')
-.usage('Usage: $0 -e [string] -a [string] -h [string] -m [string] ')
+.usage('Usage: $0 -e [string] -a [string] -h [string] -m [string]  -o [string]')
 .alias('e','enrollmentId')
 .alias('a','affiliation')
 .alias('h','host')
 .alias('m','mspid')
+.alias('o','attrs')
 .describe('e', 'Enter enrollmentId')
 .describe('a', 'Enter affiliation default: org1.department1')
 .describe('h', 'Enter CA Server Host default: http://localhost:7054')
 .describe('m', 'Enter MSPID name default: Org1MSP')
-.demandOption(['e','a'])
+.describe('o', 'Enter attrs name default: ""')
+.demandOption(['e'])
 .argv;
 //
 var fabric_client = new Fabric_Client();
@@ -27,19 +29,22 @@ var store_path = path.join(os.homedir(), '.hfc-key-store-dual');
 console.log(' Store path:' + store_path);
 
 var userId = argv.e;
-var affiliationCode = argv.a;
+var affiliationCode = argv.a || 'org1.department1';
 var host = argv.h || 'http://localhost:7054';
 var mspid = argv.m || 'Org1MSP';
+var attrs = argv.o || '';
 
 userId = userId.trim();
 affiliationCode = affiliationCode.trim();
 host = host.trim();
 mspid = mspid.trim();
+attrs = attrs.trim() || '';
 
 console.log('Enrollment Id given is: ' + argv.e);
 console.log('Affiliation code given is: ' + argv.a);
 console.log('CA Server HOST: '+ host);
 console.log('MSPID name: '+ mspid);
+console.log('attrs: '+ attrs);
 
 // create the key value store as defined in the fabric-client/config/default.json 'key-value-store' setting
 
@@ -72,10 +77,13 @@ Fabric_Client.newDefaultKeyValueStore({ path: store_path
     }
     // at this point we should have the admin user
     // first need to register the user with the CA server
-    return fabric_ca_client.register({enrollmentID: userId, affiliation: affiliationCode}, admin_user);
+    var registerData = {enrollmentID: userId, affiliation: affiliationCode};
+    if (attrs)
+        registerData = {enrollmentID: userId, affiliation: affiliationCode, attrs: attrs};
+    return fabric_ca_client.register(registerData, admin_user);
 }).then((secret) => {
     // next we need to enroll the user with CA server
-    console.log('Successfully registered '+userId+' - secret:'+ secret);
+    console.log('Successfully registered "'+userId+'" - secret: "'+ secret+'"');
 
     return fabric_ca_client.enroll({enrollmentID : userId, enrollmentSecret: secret});
 }).then((enrollment) => {
@@ -89,7 +97,7 @@ Fabric_Client.newDefaultKeyValueStore({ path: store_path
      member_user = user;
      return fabric_client.setUserContext(member_user);
 }).then(()=>{
-     console.log('User1 was successfully registered and enrolled and is ready to intreact with the fabric network');
+     console.log('"'+userId+'" was successfully registered and enrolled and is ready to interact with the fabric network\n');
 }).catch((err) => {
     console.error('Failed to register: ' + err);
 	if(err.toString().indexOf('Authorization') > -1) {

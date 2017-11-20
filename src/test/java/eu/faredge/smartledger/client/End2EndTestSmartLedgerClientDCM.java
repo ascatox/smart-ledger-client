@@ -22,7 +22,7 @@ public class End2EndTestSmartLedgerClientDCM {
 
     @BeforeClass
     public static void begin() {
-        client = new SmartLedgerClient(MYCHANNEL);
+        client = new SmartLedgerClient(MYCHANNEL, "admin","");
         /*try {
              client.installChaincode(false, false);
         } catch (SmartLedgerClientException e) {
@@ -76,7 +76,6 @@ public class End2EndTestSmartLedgerClientDCM {
 
     @Test
     public void testRegisterDCM() {
-        SmartLedgerClient client = new SmartLedgerClient(MYCHANNEL);
         try {
             DCM dcm = new DCM();
             dcm.setPhysicalArtifact("DEVICE30");
@@ -94,7 +93,6 @@ public class End2EndTestSmartLedgerClientDCM {
 
     @Test
     public void testRemoveDCM() {
-        SmartLedgerClient client = new SmartLedgerClient(MYCHANNEL);
         try {
             DCM dcm = new DCM();
             dcm.setPhysicalArtifact("DEVICE31");
@@ -118,7 +116,6 @@ public class End2EndTestSmartLedgerClientDCM {
 
     @Test
     public void testEditRegisteredDCMWhenIsPresent() {
-        SmartLedgerClient client = new SmartLedgerClient(MYCHANNEL);
         try {
             DCM dcm = new DCM();
             dcm.setPhysicalArtifact("DEVICE31");

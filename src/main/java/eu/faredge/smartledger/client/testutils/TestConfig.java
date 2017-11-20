@@ -44,6 +44,8 @@ import org.hyperledger.fabric.sdk.helper.Utils;
 public class TestConfig {
     private static ResourceBundle finder = ResourceBundle.getBundle("smart-ledger");
     public static final String HOST = finder.getString("FABRIC_HOST");
+    public static final String PEER_HOST = finder.getString("FABRIC_PEER_HOST");
+
 
     private static final Log logger = LogFactory.getLog(TestConfig.class);
 
@@ -84,7 +86,7 @@ public class TestConfig {
             sdkProperties.load(configProps);
 
         } catch (IOException e) { // if not there no worries just use defaults
-//            logger.warn(String.format("Failed to load any test configuration from: %s. Using toolkit defaults",
+//            logger.warn(String.format("Failed to load any CaUser configuration from: %s. Using toolkit defaults",
 //                    DEFAULT_CONFIG));
         } finally {
 
@@ -96,13 +98,16 @@ public class TestConfig {
             defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg1.domname", "org1.example.com");
             defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg1.ca_location", "http://" + HOST + ":7054");
             defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg1.caName", "ca.example.com");
-            defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg1.peer_locations", "peer0.org1.example.com@grpc://" + HOST
+            defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg1.peer_locations", "peer0.org1.example.com@grpc://" +
+                    PEER_HOST
                     + ":7051,");
             //" peer1.org1.example.com@grpc://localhost:7053");
             defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg1.orderer_locations", "orderer.example.com@grpc://" + HOST
                     + ":7050");
             defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg1.eventhub_locations", "peer0.org1.example.com@grpc://" +
-                    HOST + ":7053,peer1.org1.example.com@grpc://" + HOST + ":7058");
+                            PEER_HOST + ":7053"
+                    //+ ",peer1.org1.example.com@grpc://" + PEER_HOST + ":7058"
+            );
 //            defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg2.mspid", "Org2MSP");
 //            defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg2.domname", "org2.example.com");
 //            defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg2.ca_location", "http://localhost:8054");
@@ -169,7 +174,8 @@ public class TestConfig {
                 sampleOrg.setCAName(sdkProperties.getProperty((INTEGRATIONTESTS_ORG + org.getKey() + ".caName")));
 
                 if (runningFabricCATLS) {
-                    String cert = ("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations" +
+                    String cert = ("src/CaUser/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config" +
+                            "/peerOrganizations" +
                             "/DNAME/ca/ca.DNAME-cert.pem").replaceAll("DNAME", domainName);
                     File cf = new File(cert);
                     if (!cf.exists() || !cf.isFile()) {
@@ -183,9 +189,7 @@ public class TestConfig {
                     sampleOrg.setCAProperties(properties);
                 }
             }
-
         }
-
     }
 
     private String grpcTLSify(String location) {

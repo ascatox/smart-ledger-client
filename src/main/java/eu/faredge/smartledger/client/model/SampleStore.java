@@ -14,6 +14,11 @@
 
 package eu.faredge.smartledger.client.model;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.stream.JsonReader;
+import eu.faredge.smartledger.client.model.certificate.CaUser;
+import jdk.nashorn.internal.parser.JSONParser;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -23,6 +28,8 @@ import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.hyperledger.fabric.sdk.Enrollment;
 
+import javax.json.Json;
+import javax.json.JsonReaderFactory;
 import java.io.*;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -38,6 +45,7 @@ import java.util.Properties;
  */
 public class SampleStore {
 
+    private static final String STORE_PATH = "";
     private String file;
     private Log logger = LogFactory.getLog(SampleStore.class);
 
@@ -45,6 +53,8 @@ public class SampleStore {
 
         this.file = file.getAbsolutePath();
     }
+
+    public SampleStore() {}
 
     /**
      * Get the value associated with name.
@@ -159,7 +169,8 @@ public class SampleStore {
      * @throws InvalidKeySpecException
      */
     public SampleUser getMember(String name, String org, String mspId, File privateKeyFile,
-                                File certificateFile) throws IOException, NoSuchAlgorithmException, NoSuchProviderException, InvalidKeySpecException {
+                                File certificateFile) throws IOException, NoSuchAlgorithmException,
+            NoSuchProviderException, InvalidKeySpecException {
         try {
             // Try to get the SampleUser state from the cache
             SampleUser sampleUser = members.get(SampleUser.toKeyValStoreName(name, org));
@@ -199,11 +210,54 @@ public class SampleStore {
         }
     }
 
+    public SampleUser getMember(String name, String org, String storePath) throws IOException, NoSuchAlgorithmException,
+            NoSuchProviderException, InvalidKeySpecException {
+        try {
+            // Try to get the SampleUser state from the cache
+            SampleUser sampleUser = members.get(SampleUser.toKeyValStoreName(name, org));
+            if (null != sampleUser) {
+                return sampleUser;
+            }
+
+            // Create the SampleUser and try to restore it's state from the key value store (if found).
+            sampleUser = new SampleUser();
+            String storePathAbsolute = System.getProperty("user.home") + "/" + storePath + "/";
+            ObjectMapper mapper = new ObjectMapper();
+            CaUser caUser = mapper.readValue(new FileInputStream(storePathAbsolute + name), CaUser.class);
+            sampleUser.setMspId(caUser.getMspid());
+            sampleUser.setName(caUser.getName());
+            String certificate = caUser.getEnrollment().getIdentity().getCertificate();
+            String privateKeyStr = caUser.getEnrollment().getSigningIdentity() + "-priv";
+            PrivateKey privateKey = getPrivateKeyFromBytes(IOUtils.toByteArray(new FileInputStream
+                    (storePathAbsolute + privateKeyStr)));
+            sampleUser.setEnrollment(new SampleStoreEnrollement(privateKey, certificate));
+            sampleUser.saveState();
+            return sampleUser;
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw e;
+
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            throw e;
+        } catch (NoSuchProviderException e) {
+            e.printStackTrace();
+            throw e;
+        } catch (InvalidKeySpecException e) {
+            e.printStackTrace();
+            throw e;
+        } catch (ClassCastException e) {
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
     static {
         Security.addProvider(new BouncyCastleProvider());
     }
 
-    static PrivateKey getPrivateKeyFromBytes(byte[] data) throws IOException, NoSuchProviderException, NoSuchAlgorithmException, InvalidKeySpecException {
+    static PrivateKey getPrivateKeyFromBytes(byte[] data) throws IOException, NoSuchProviderException,
+            NoSuchAlgorithmException, InvalidKeySpecException {
         final Reader pemReader = new StringReader(new String(data));
 
         final PrivateKeyInfo pemPair;
@@ -211,7 +265,8 @@ public class SampleStore {
             pemPair = (PrivateKeyInfo) pemParser.readObject();
         }
 
-        PrivateKey privateKey = new JcaPEMKeyConverter().setProvider(BouncyCastleProvider.PROVIDER_NAME).getPrivateKey(pemPair);
+        PrivateKey privateKey = new JcaPEMKeyConverter().setProvider(BouncyCastleProvider.PROVIDER_NAME)
+                .getPrivateKey(pemPair);
 
         return privateKey;
     }
@@ -223,12 +278,12 @@ public class SampleStore {
         private final String certificate;
 
 
-        SampleStoreEnrollement(PrivateKey privateKey, String certificate)  {
+        SampleStoreEnrollement(PrivateKey privateKey, String certificate) {
 
 
             this.certificate = certificate;
 
-            this.privateKey =  privateKey;
+            this.privateKey = privateKey;
         }
 
         @Override

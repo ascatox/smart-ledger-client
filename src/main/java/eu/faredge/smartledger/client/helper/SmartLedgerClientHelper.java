@@ -13,6 +13,7 @@ import org.hyperledger.fabric.sdk.*;
 import org.hyperledger.fabric.sdk.exception.*;
 import org.hyperledger.fabric.sdk.security.CryptoSuite;
 import org.hyperledger.fabric_ca.sdk.HFCAClient;
+import org.hyperledger.fabric_ca.sdk.RegistrationRequest;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,6 +29,7 @@ import static org.hyperledger.fabric.sdk.BlockInfo.EnvelopeType.TRANSACTION_ENVE
 public class SmartLedgerClientHelper {
     private static ResourceBundle finder = ResourceBundle.getBundle("smart-ledger");
     private static final TestConfig testConfig = TestConfig.getConfig();
+    public static final String STORE_PATH = finder.getString("STORE_PATH");
     private static final String TEST_ADMIN_NAME = finder.getString("TEST_ADMIN_NAME");
     private static final String TESTUSER_1_NAME = finder.getString("TEST_USER_1_NAME");
     private static final String TEST_FIXTURES_PATH = finder.getString("TEST_FIXTURES_PATH");
@@ -43,16 +45,14 @@ public class SmartLedgerClientHelper {
 
     private static String testTxID = null;  // save the CC invoke TxID and use in queries
 
-    private static Collection<SampleOrg> testSampleOrgs;
     private static ChaincodeID chaincodeID = null;
     private static final int DELTA = 100;
-    private static HFClient client = null;
-    private static SampleOrg sampleOrg = null;
+    private static HFClient client = HFClient.createNewInstance();
     private static Collection<Orderer> orderers = null;
 
     private static SampleUser user = null;
     private static SampleUser admin = null;
-    private static SampleUser peerOrgAdmin = null;
+    //private static SampleUser peerOrgAdmin = null;
 
     private static final Map<String, String> TX_EXPECTED;
 
@@ -63,7 +63,7 @@ public class SmartLedgerClientHelper {
     }
 
 
-    public static void checkConfig() throws SmartLedgerClientException {
+    public static void checkConfig(SampleOrg sampleOrg) throws SmartLedgerClientException {
         Util.out("\n\n\nRUNNING: ISmartLedgerClient.\n");
 
         try {
@@ -71,34 +71,28 @@ public class SmartLedgerClientHelper {
                     .setVersion(CHAIN_CODE_VERSION)
                     .setPath(CHAIN_CODE_PATH).build();
 
-            testSampleOrgs = testConfig.getIntegrationTestsSampleOrgs();
             //Set up hfca for each sample org
 
-            for (SampleOrg sampleOrg : testSampleOrgs) {
-                String caName = sampleOrg.getCAName(); //Try one of each name and no name.
-                if (caName != null && !caName.isEmpty()) {
-                    sampleOrg.setCAClient(HFCAClient.createNewInstance(caName, sampleOrg.getCALocation(), sampleOrg
-                            .getCAProperties()));
-                } else {
-                    sampleOrg.setCAClient(HFCAClient.createNewInstance(sampleOrg.getCALocation(), sampleOrg
-                            .getCAProperties()));
-                }
+            String caName = sampleOrg.getCAName(); //Try one of each name and no name.
+            if (caName != null && !caName.isEmpty()) {
+                sampleOrg.setCAClient(HFCAClient.createNewInstance(caName, sampleOrg.getCALocation(), sampleOrg
+                        .getCAProperties()));
+            } else {
+                sampleOrg.setCAClient(HFCAClient.createNewInstance(sampleOrg.getCALocation(), sampleOrg
+                        .getCAProperties()));
             }
         } catch (Exception e) {
             throw new SmartLedgerClientException(e);
         }
     }
 
-    public static void setup() throws SmartLedgerClientException {
+    public static void setup(SampleOrg sampleOrg, String userName, String enrollmentSecret) throws
+            SmartLedgerClientException {
         try {
-
             ////////////////////////////
             // Setup client
 
-            //Create instance of client.
-            client = HFClient.createNewInstance();
             client.setCryptoSuite(CryptoSuite.Factory.getCryptoSuite());
-
             // client.setMemberServices(peerOrg1FabricCA);
 
             ////////////////////////////
@@ -106,63 +100,53 @@ public class SmartLedgerClientHelper {
 
             //Persistence is not part of SDK. Sample file store is for demonstration purposes only!
             //   MUST be replaced with more robust application implementation  (Database, LDAP)
-            File sampleStoreFile = new File(System.getProperty("java.io.tmpdir") + "/HFCSampletest.properties");
-            if (sampleStoreFile.exists()) { //For testing start fresh
-                sampleStoreFile.delete();
-            }
+            //File sampleStoreFile = new File(System.getProperty("java.io.tmpdir") + "/SmartLedgerClientProps" +
+            //       ".properties");
+            File sampleStoreFile = new File(System.getProperty("user.home") + "/.smartLedgerClientProps" +
+                    ".properties");
+            //if (sampleStoreFile.exists()) { //For testing start fresh
+            //  sampleStoreFile.delete();
+            //}
 
             final SampleStore sampleStore = new SampleStore(sampleStoreFile);
-            //  sampleStoreFile.deleteOnExit();
+            HFCAClient ca = sampleOrg.getCAClient();
 
-            //SampleUser can be any implementation that implements org.hyperledger.fabric.sdk.User Interface
+            final String orgName = sampleOrg.getName();
+            final String mspid = sampleOrg.getMSPID();
+            ca.setCryptoSuite(CryptoSuite.Factory.getCryptoSuite());
 
-            ////////////////////////////
-            // get users for all orgs
-
-            for (SampleOrg sampleOrg : testSampleOrgs) {
-
-                HFCAClient ca = sampleOrg.getCAClient();
-
-                final String orgName = sampleOrg.getName();
-                final String mspid = sampleOrg.getMSPID();
-                ca.setCryptoSuite(CryptoSuite.Factory.getCryptoSuite());
-
-                admin = sampleStore.getMember(TEST_ADMIN_NAME, orgName);
-                if (!admin.isEnrolled()) {  //Preregistered admin only needs to be enrolled with Fabric caClient.
-                    admin.setEnrollment(ca.enroll(admin.getName(), "adminpw"));
-                    admin.setMspId(mspid);
-                }
-                sampleOrg.setAdmin(admin); // The admin of this org --
-
-                user = sampleStore.getMember(TESTUSER_1_NAME, sampleOrg.getName());
-//TODO @ascatox Understand how to mark an User as registered and enrolled
-//                if (!user.isRegistered()) {  // users need to be registered AND enrolled
-//                    RegistrationRequest rr = new RegistrationRequest(user.getName(), "org1.department1");
-//                    user.setEnrollmentSecret(ca.register(rr, admin));
-//                }
-//                if (!user.isEnrolled()) {
-//                    user.setEnrollment(ca.enroll(user.getName(), user.getEnrollmentSecret()));
-//                    user.setMspId(mspid);
-//                }
-                sampleOrg.addUser(user); //Remember user belongs to this Org
-
-                final String sampleOrgName = sampleOrg.getName();
-                final String sampleOrgDomainName = sampleOrg.getDomainName();
-
-                peerOrgAdmin = sampleStore.getMember(sampleOrgName + "Admin", sampleOrgName, sampleOrg
-                                .getMSPID(),
-                        Util.findFileSk(Paths.get(testConfig.getTestChannelPath(),
-                                "crypto-config-fabcar/peerOrganizations/",
-                                sampleOrgDomainName, format("/users/Admin@%s/msp/keystore", sampleOrgDomainName))
-                                .toFile()),
-                        Paths.get(testConfig.getTestChannelPath(), "crypto-config-fabcar/peerOrganizations/",
-                                sampleOrgDomainName,
-                                format("/users/Admin@%s/msp/signcerts/Admin@%s-cert.pem", sampleOrgDomainName,
-                                        sampleOrgDomainName)).toFile());
-
-                sampleOrg.setPeerAdmin(peerOrgAdmin); //A special user that can create channels, join peers and
+            admin = sampleStore.getMember(TEST_ADMIN_NAME, orgName);
+            if (!admin.isEnrolled()) {  //Preregistered admin only needs to be enrolled with Fabric caClient.
+                admin.setEnrollment(ca.enroll(admin.getName(), "adminpw"));
+                admin.setMspId(mspid);
             }
-            sampleOrg = testConfig.getIntegrationTestsSampleOrg("peerOrg1"); //TODO
+            sampleOrg.setAdmin(admin); // The admin of this org --
+
+            user = sampleStore.getMember(userName, sampleOrg.getName());
+//TODO @ascatox Understand how to mark an CaUser as registered and enrolled
+            if (!user.isRegistered()) {  // users need to be registered AND enrolled
+                RegistrationRequest rr = new RegistrationRequest(user.getName(), "org1.department1");
+                user.setEnrollmentSecret(ca.register(rr, admin));
+                enrollmentSecret = user.getEnrollmentSecret();
+            }
+            if (!user.isEnrolled()) {
+                user.setEnrollment(ca.enroll(user.getName(), enrollmentSecret));
+                user.setMspId(mspid);
+            }
+            sampleOrg.addUser(user); //Remember user belongs to this Org
+            final String sampleOrgName = sampleOrg.getName();
+            final String sampleOrgDomainName = sampleOrg.getDomainName();
+            SampleUser peerOrgAdmin = sampleStore.getMember(sampleOrgName + "Admin", sampleOrgName, sampleOrg
+                            .getMSPID(),
+                    Util.findFileSk(Paths.get(testConfig.getTestChannelPath(),
+                            "crypto-config-fabcar/peerOrganizations/",
+                            sampleOrgDomainName, format("/users/Admin@%s/msp/keystore", sampleOrgDomainName))
+                            .toFile()),
+                    Paths.get(testConfig.getTestChannelPath(), "crypto-config-fabcar/peerOrganizations/",
+                            sampleOrgDomainName,
+                            format("/users/Admin@%s/msp/signcerts/Admin@%s-cert.pem", sampleOrgDomainName,
+                                    sampleOrgDomainName)).toFile());
+            sampleOrg.setPeerAdmin(peerOrgAdmin); //A special user that can create channels, join peers and
         } catch (Exception e) {
             throw new SmartLedgerClientException(e);
         }
@@ -230,7 +214,7 @@ public class SmartLedgerClientHelper {
     public static CompletableFuture<BlockEvent.TransactionEvent> invokeChaincode(Channel channel, String
             functionName, String[] args)
             throws Exception {
-        return invokeChaincode(client, channel, chaincodeID, functionName, args, peerOrgAdmin);
+        return invokeChaincode(client, channel, chaincodeID, functionName, args, user);
     }
 
     private static CompletableFuture<BlockEvent.TransactionEvent> invokeChaincode(HFClient client, Channel channel,
@@ -293,14 +277,14 @@ public class SmartLedgerClientHelper {
         }
     }
 
-    public static Channel constructChannel(String name) throws Exception {
-        return constructChannel(name, client, sampleOrg);
+    public static Channel initializeChannel(String name, SampleOrg sampleOrg) throws Exception {
+        return initializeChannel(name, client, sampleOrg);
     }
 
-    private static Channel constructChannel(String name, HFClient client, SampleOrg sampleOrg) throws
+    private static Channel initializeChannel(String name, HFClient client, SampleOrg sampleOrg) throws
             SmartLedgerClientException {
         ////////////////////////////
-        //Construct the channel
+        //Initialize the channel
         //
         try {
             Util.out("Constructing channel %s", name);
@@ -338,7 +322,8 @@ public class SmartLedgerClientHelper {
             for (String peerName : sampleOrg.getPeerNames()) {
                 String peerLocation = sampleOrg.getPeerLocation(peerName);
 
-                Properties peerProperties = testConfig.getPeerProperties(peerName); //test properties for peer.. if any.
+                Properties peerProperties = testConfig.getPeerProperties(peerName); //CaUser properties for peer.. if
+                // any.
                 if (peerProperties == null) {
                     peerProperties = new Properties();
                 }
@@ -544,7 +529,7 @@ public class SmartLedgerClientHelper {
         return ret;
     }
 
-    public static void installChaincode(Channel channel) throws SmartLedgerClientException {
+    public static void installChaincode(Channel channel, SampleOrg sampleOrg) throws SmartLedgerClientException {
         Collection<ProposalResponse> successful = new ArrayList<>();
         Collection<ProposalResponse> failed = new ArrayList<>();
         installChaincode(client, channel, sampleOrg, successful, failed);

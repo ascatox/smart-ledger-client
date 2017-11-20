@@ -15,6 +15,7 @@
 package eu.faredge.smartledger.client.model;
 
 import io.netty.util.internal.StringUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.fabric.sdk.Enrollment;
 import org.hyperledger.fabric.sdk.User;
@@ -31,10 +32,13 @@ public class SampleUser implements User, Serializable {
     private String affiliation;
     private String organization;
     private String enrollmentSecret;
-    Enrollment enrollment = null; //need access in test env.
+    Enrollment enrollment = null; //need access in CaUser env.
 
     private transient SampleStore keyValStore;
     private String keyValStoreName;
+
+    public SampleUser() {
+    }
 
     SampleUser(String name, String org, SampleStore fs) {
         this.name = name;
@@ -51,9 +55,14 @@ public class SampleUser implements User, Serializable {
 
     }
 
+
     static boolean isStored(String name, String org, SampleStore fs) {
 
         return fs.hasValue(toKeyValStoreName(name, org));
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getName() {
@@ -129,6 +138,7 @@ public class SampleUser implements User, Serializable {
      * Save the state of this user to the key value store.
      */
     void saveState() {
+        if (StringUtils.isEmpty(this.keyValStoreName)) return;
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         try {
             ObjectOutputStream oos = new ObjectOutputStream(bos);

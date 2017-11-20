@@ -20,7 +20,7 @@ var fabric_ca_client = null;
 var admin_user = null;
 var member_user = null;
 var store_path = path.join(os.homedir(), '.hfc-key-store-dual');
-console.log(' Store path:'+store_path);
+console.log(' Store path:'+ store_path);
 
 var host = argv.h || 'http://localhost:7054';
 var mspid = argv.m || 'Org1MSP';
