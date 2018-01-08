@@ -100,7 +100,7 @@ public interface ISmartLedgerClient {
      * @throws SmartLedgerClientException
      */
 
-    void installChaincode(boolean instantiate, boolean upgrade) throws SmartLedgerClientException;
+    //void installChaincode(boolean instantiate, boolean upgrade) throws SmartLedgerClientException;
 
     /**
      * This is an administration method, needed to **instantiate** or **upgrade** a chaincode in all peers defined in
@@ -109,7 +109,7 @@ public interface ISmartLedgerClient {
      * @param isUpgrade
      * @throws SmartLedgerClientException
      */
-    void instantiateOrUpgradeChaincode(boolean isUpgrade) throws SmartLedgerClientException;
+    //void instantiateOrUpgradeChaincode(boolean isUpgrade) throws SmartLedgerClientException;
 
     /**
      * This method gives us a List of DCM objects if present in the ledger.
@@ -117,6 +117,7 @@ public interface ISmartLedgerClient {
      * @return
      * @throws SmartLedgerClientException
      */
+
     List<DCM> getAllDataConsumerManifests() throws SmartLedgerClientException;
 
     /**
