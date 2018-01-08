@@ -10,6 +10,7 @@ import eu.faredge.smartledger.client.model.DSM;
 import org.junit.*;
 
 import java.util.List;
+
 import static org.hamcrest.CoreMatchers.*;
 
 import static org.junit.Assert.*;
@@ -21,12 +22,13 @@ public class End2EndTestSmartLedgerClientDSM {
 
     @BeforeClass
     public static void begin() {
-        client = new SmartLedgerClient(MYCHANNEL, "smartLedgerUser3", "");
-//     try {
-//             client.installChaincode(true, false);
-//        } catch (SmartLedgerClientException e) {
-//            assertFalse(e.getMessage(), true);
-//        }
+        client = new SmartLedgerClient(MYCHANNEL, "smartLedgerUser2");
+       /* try {
+            SmartLedgerClient smartLedgerClient = (SmartLedgerClient) client;
+            smartLedgerClient.installChaincode(false, false);
+        } catch (SmartLedgerClientException e) {
+            assertFalse(e.getMessage(), true);
+        }*/
     }
 
     @AfterClass
@@ -116,7 +118,7 @@ public class End2EndTestSmartLedgerClientDSM {
                 dsmBack = client.getDataSourceManifestByUri(dsm.getUri());
             } catch (SmartLedgerClientException e) {
                 e.printStackTrace();
-            } catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
             assertNull(dsmBack);

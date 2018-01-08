@@ -31,14 +31,14 @@ public class SmartLedgerClientHelper {
     private static final TestConfig testConfig = TestConfig.getConfig();
     public static final String STORE_PATH = finder.getString("STORE_PATH");
     private static final String TEST_ADMIN_NAME = finder.getString("TEST_ADMIN_NAME");
-    private static final String TESTUSER_1_NAME = finder.getString("TEST_USER_1_NAME");
+    private static final String TESTUSER_1_NAME = finder.getString("TEST_USER_NAME");
     private static final String TEST_FIXTURES_PATH = finder.getString("TEST_FIXTURES_PATH");
 
     private static final String CHAIN_CODE_NAME = finder.getString("CHAIN_CODE_NAME");
     private static final String CHAIN_CODE_PATH = finder.getString("CHAIN_CODE_PATH");
     private static final String CHAIN_CODE_VERSION = finder.getString("CHAIN_CODE_VERSION");
 
-    private static final String FOO_CHANNEL_NAME = finder.getString("FOO_CHANNEL_NAME");
+    private static final String FOO_CHANNEL_NAME = finder.getString("CHANNEL_NAME");
 
     private static final byte[] EXPECTED_EVENT_DATA = "!".getBytes(UTF_8);
     private static final String EXPECTED_EVENT_NAME = "event";
@@ -139,13 +139,19 @@ public class SmartLedgerClientHelper {
             SampleUser peerOrgAdmin = sampleStore.getMember(sampleOrgName + "Admin", sampleOrgName, sampleOrg
                             .getMSPID(),
                     Util.findFileSk(Paths.get(testConfig.getTestChannelPath(),
-                            "crypto-config-fabcar/peerOrganizations/",
+                            "crypto-config-smartfactory-prod/peerOrganizations/",
                             sampleOrgDomainName, format("/users/Admin@%s/msp/keystore", sampleOrgDomainName))
                             .toFile()),
-                    Paths.get(testConfig.getTestChannelPath(), "crypto-config-fabcar/peerOrganizations/",
+                    Paths.get(testConfig.getTestChannelPath(), "crypto-config-smartfactory-prod/peerOrganizations/",
                             sampleOrgDomainName,
                             format("/users/Admin@%s/msp/signcerts/Admin@%s-cert.pem", sampleOrgDomainName,
                                     sampleOrgDomainName)).toFile());
+
+          /*  SampleUser peerOrgAdmin = sampleStore.getMember("peerAdmin", orgName);
+            if (!peerOrgAdmin.isEnrolled()) {  //Preregistered admin only needs to be enrolled with Fabric caClient.
+                peerOrgAdmin.setEnrollment(ca.enroll(peerOrgAdmin.getName(), "dyackLBnOLRM"));
+                peerOrgAdmin.setMspId(mspid);
+            }*/
             sampleOrg.setPeerAdmin(peerOrgAdmin); //A special user that can create channels, join peers and
         } catch (Exception e) {
             throw new SmartLedgerClientException(e);
@@ -287,7 +293,7 @@ public class SmartLedgerClientHelper {
         //Initialize the channel
         //
         try {
-            Util.out("Constructing channel %s", name);
+            Util.out("Constructing channel java structures %s", name);
 
             //Only peer Admin org
             client.setUserContext(sampleOrg.getPeerAdmin());
@@ -316,7 +322,7 @@ public class SmartLedgerClientHelper {
                 // @ascatox Constructs a new channel
                 newChannel = client.newChannel(name);
             }
-            Util.out("Created channel %s", name);
+            //Util.out("Created channel %s", name);
             newChannel.addOrderer(anOrderer);
 
             for (String peerName : sampleOrg.getPeerNames()) {
@@ -354,14 +360,14 @@ public class SmartLedgerClientHelper {
                         eventHubProperties);
                 newChannel.addEventHub(eventHub);
             }
-            newChannel.initialize();
-            Util.out("Finished initialization channel %s", name);
-
+            newChannel.initialize(); //There's no need to initialize the channel we are only building the java
+            // structures.
+            Util.out("Finished initialization channel java structures %s", name);
             return newChannel;
         } catch (InvalidArgumentException e) {
             throw new SmartLedgerClientException(e);
-        } catch (TransactionException e) {
-            throw new SmartLedgerClientException(e);
+       /* } catch (TransactionException e) {
+            throw new SmartLedgerClientException(e); */
         } catch (Exception e) {
             throw new SmartLedgerClientException(e);
         }

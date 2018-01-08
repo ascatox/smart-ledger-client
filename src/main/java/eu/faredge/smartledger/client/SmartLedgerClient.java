@@ -32,7 +32,15 @@ public class SmartLedgerClient implements ISmartLedgerClient {
     private static List<SampleOrg> sampleOrgs;
     private static final TestConfig testConfig = TestConfig.getConfig();
 
+    public SmartLedgerClient(String channelName, String username) {
+        doSmartLedgerClient(channelName, username, null);
+    }
+
     public SmartLedgerClient(String channelName, String username, String enrollmentSecret) {
+        doSmartLedgerClient(channelName, username, enrollmentSecret);
+    }
+
+    private void doSmartLedgerClient(String channelName, String username, String enrollmentSecret) {
         try {
             if (StringUtils.isEmpty(username))
                 throw new SmartLedgerClientException("Username not given, Please give me an authorized User!");

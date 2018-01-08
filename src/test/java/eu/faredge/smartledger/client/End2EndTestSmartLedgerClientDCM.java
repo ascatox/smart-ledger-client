@@ -22,19 +22,21 @@ public class End2EndTestSmartLedgerClientDCM {
 
     @BeforeClass
     public static void begin() {
-        client = new SmartLedgerClient(MYCHANNEL, "admin","");
-        /*try {
-             client.installChaincode(false, false);
+        client = new SmartLedgerClient(MYCHANNEL, "admin");
+       /*  try {
+           SmartLedgerClient smartLedgerClient = (SmartLedgerClient)client;
+            smartLedgerClient.installChaincode(false, false);
+
         } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);
-        }*/
+        }
+        */
     }
 
     @AfterClass
     public static void end() {
         client = null;
     }
-
 
 
     @Test
@@ -48,7 +50,6 @@ public class End2EndTestSmartLedgerClientDCM {
             assertFalse(e.getMessage(), true);
         }
     }
-
 
 
     @Test
@@ -105,7 +106,7 @@ public class End2EndTestSmartLedgerClientDCM {
                 back = client.getDataConsumerManifestByUri(dcm.getUri());
             } catch (SmartLedgerClientException e) {
                 e.printStackTrace();
-            } catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
             assertNull(back);
@@ -131,7 +132,6 @@ public class End2EndTestSmartLedgerClientDCM {
             assertFalse(e.getMessage(), true);
         }
     }
-
 
 
 }
