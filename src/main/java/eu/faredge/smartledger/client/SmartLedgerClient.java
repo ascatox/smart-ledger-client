@@ -58,7 +58,7 @@ public class SmartLedgerClient implements ISmartLedgerClient {
      * @param upgrade
      * @throws Exception
      */
-    @Override
+    //@Override
     public void installChaincode(boolean instantiate, boolean upgrade) throws SmartLedgerClientException {
         SmartLedgerClientHelper.installChaincode(channel, sampleOrgs.get(0)); //TODO Only the first
         Util.out("Chaincode installed correctly!!!");
@@ -71,7 +71,7 @@ public class SmartLedgerClient implements ISmartLedgerClient {
      * @param isUpgrade
      * @throws Exception
      */
-    @Override
+    //@Override
     public void instantiateOrUpgradeChaincode(boolean isUpgrade) throws SmartLedgerClientException {
         String[] args = {};
         CompletableFuture<BlockEvent.TransactionEvent> transactionEventCompletableFuture = null;
