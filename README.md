@@ -9,6 +9,4 @@ The [Chaincode](https://github.com/ascatox/smart-ledger-client/blob/master/src/m
 The **JavaDoc** documentation of the Library, is present in the `doc` folder of the project.<br/>
 Clone the project and open the `index.html`, in the doc folder to explore the documentation starting from `iSmartLedgerClient` .
 
-You can find a JavaDoc documentation for the library, in the [doc](https://github.com/ascatox/smart-ledger-client/tree/master/doc) folder of the project. 
-
 Happy Blockchain 😄
