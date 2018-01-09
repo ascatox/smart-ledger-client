@@ -20,7 +20,7 @@ public class DCM implements Serializable {
     private String uri;
     @Pattern(regexp = Util.REGEX_MAC_ADDRESS, message = Validator.MAC_ADDRESS_INVALID_MESSAGE)
     private String macAddress;
-    private String dsds;
+    private String dsds; //ex: dsd://myspace/mydataXYZ; dsd://myspace/mydata123; dsd://myotherspace/mydata456
     private String type;
 
     @Override

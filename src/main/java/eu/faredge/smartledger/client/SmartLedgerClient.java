@@ -193,6 +193,11 @@ public class SmartLedgerClient implements ISmartLedgerClient {
         return Util.extractDSMFromPayloads(payloads);
     }
 
+    @Override
+    public List<DSM> getAllDataSourceManifestsByDCM(DCM dcm) throws SmartLedgerClientException {
+        return null;
+    }
+
     /**
      * @return
      * @throws Exception

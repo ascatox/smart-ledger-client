@@ -68,7 +68,7 @@
                 <version>2.20.1</version>
                 <configuration>
                     <includes>
-                        <include>**/*End2End*.java</include>
+                        <include>**/End2End*.java</include>
                     </includes>
                     <excludes>
                         <exclude>**/*Unit*.java</exclude>

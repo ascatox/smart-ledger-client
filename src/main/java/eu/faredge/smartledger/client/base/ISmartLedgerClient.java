@@ -100,6 +100,17 @@ public interface ISmartLedgerClient {
      * @throws SmartLedgerClientException
      */
 
+
+    /**
+     * This method gives us a List of DSM objects compatible and of interest for the given DCM using definitions
+     * It gives us a null object if the objects are not present
+     * @param dcm
+     * @return
+     * @throws SmartLedgerClientException
+     */
+    List<DSM> getAllDataSourceManifestsByDCM(DCM dcm) throws SmartLedgerClientException;
+
+
     //void installChaincode(boolean instantiate, boolean upgrade) throws SmartLedgerClientException;
 
     /**
