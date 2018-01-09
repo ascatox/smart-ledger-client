@@ -22,15 +22,7 @@ public class End2EndTestSmartLedgerClientDCM {
 
     @BeforeClass
     public static void begin() {
-        client = new SmartLedgerClient(MYCHANNEL, "admin");
-       /*  try {
-           SmartLedgerClient smartLedgerClient = (SmartLedgerClient)client;
-            smartLedgerClient.installChaincode(false, false);
-
-        } catch (SmartLedgerClientException e) {
-            assertFalse(e.getMessage(), true);
-        }
-        */
+        client = new SmartLedgerClient(MYCHANNEL);
     }
 
     @AfterClass

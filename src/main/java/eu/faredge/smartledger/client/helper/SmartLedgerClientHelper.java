@@ -13,10 +13,10 @@ import org.hyperledger.fabric.sdk.*;
 import org.hyperledger.fabric.sdk.exception.*;
 import org.hyperledger.fabric.sdk.security.CryptoSuite;
 import org.hyperledger.fabric_ca.sdk.HFCAClient;
-import org.hyperledger.fabric_ca.sdk.RegistrationRequest;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -29,9 +29,6 @@ import static org.hyperledger.fabric.sdk.BlockInfo.EnvelopeType.TRANSACTION_ENVE
 public class SmartLedgerClientHelper {
     private static ResourceBundle finder = ResourceBundle.getBundle("smart-ledger");
     private static final TestConfig testConfig = TestConfig.getConfig();
-    public static final String STORE_PATH = finder.getString("STORE_PATH");
-    private static final String TEST_ADMIN_NAME = finder.getString("TEST_ADMIN_NAME");
-    private static final String TESTUSER_1_NAME = finder.getString("TEST_USER_NAME");
     private static final String TEST_FIXTURES_PATH = finder.getString("TEST_FIXTURES_PATH");
 
     private static final String CHAIN_CODE_NAME = finder.getString("CHAIN_CODE_NAME");
@@ -100,8 +97,6 @@ public class SmartLedgerClientHelper {
 
             //Persistence is not part of SDK. Sample file store is for demonstration purposes only!
             //   MUST be replaced with more robust application implementation  (Database, LDAP)
-            //File sampleStoreFile = new File(System.getProperty("java.io.tmpdir") + "/SmartLedgerClientProps" +
-            //       ".properties");
             File sampleStoreFile = new File(System.getProperty("user.home") + "/.smartLedgerClientProps" +
                     ".properties");
             //if (sampleStoreFile.exists()) { //For testing start fresh
@@ -114,17 +109,17 @@ public class SmartLedgerClientHelper {
             final String orgName = sampleOrg.getName();
             final String mspid = sampleOrg.getMSPID();
             ca.setCryptoSuite(CryptoSuite.Factory.getCryptoSuite());
-
+/*
             admin = sampleStore.getMember(TEST_ADMIN_NAME, orgName);
             if (!admin.isEnrolled()) {  //Preregistered admin only needs to be enrolled with Fabric caClient.
                 admin.setEnrollment(ca.enroll(admin.getName(), "adminpw"));
                 admin.setMspId(mspid);
             }
-            sampleOrg.setAdmin(admin); // The admin of this org --
+            sampleOrg.setAdmin(admin); // The admin of this org --*/
 
             user = sampleStore.getMember(userName, sampleOrg.getName());
 //TODO @ascatox Understand how to mark an CaUser as registered and enrolled
-            if (!user.isRegistered()) {  // users need to be registered AND enrolled
+            /*if (!user.isRegistered()) {  // users need to be registered AND enrolled
                 RegistrationRequest rr = new RegistrationRequest(user.getName(), "org1.department1");
                 user.setEnrollmentSecret(ca.register(rr, admin));
                 enrollmentSecret = user.getEnrollmentSecret();
@@ -132,27 +127,34 @@ public class SmartLedgerClientHelper {
             if (!user.isEnrolled()) {
                 user.setEnrollment(ca.enroll(user.getName(), enrollmentSecret));
                 user.setMspId(mspid);
-            }
-            sampleOrg.addUser(user); //Remember user belongs to this Org
+            }*/
+            //sampleOrg.addUser(user); //Remember user belongs to this Org
             final String sampleOrgName = sampleOrg.getName();
             final String sampleOrgDomainName = sampleOrg.getDomainName();
+
+            final Path path = Paths.get(testConfig.getHomeDirPath(),
+                    "crypto-config/peerOrganizations/",
+                    sampleOrgDomainName, format("/users/Admin@%s/msp/keystore", sampleOrgDomainName));
+            final Path path1 = Paths.get(testConfig.getHomeDirPath(),
+                    "crypto-config/peerOrganizations/",
+                    sampleOrgDomainName,
+                    format("/users/Admin@%s/msp/signcerts/Admin@%s-cert.pem", sampleOrgDomainName,
+                            sampleOrgDomainName));
+
             SampleUser peerOrgAdmin = sampleStore.getMember(sampleOrgName + "Admin", sampleOrgName, sampleOrg
                             .getMSPID(),
-                    Util.findFileSk(Paths.get(testConfig.getTestChannelPath(),
-                            "crypto-config-smartfactory-prod/peerOrganizations/",
-                            sampleOrgDomainName, format("/users/Admin@%s/msp/keystore", sampleOrgDomainName))
+                    Util.findFileSk(path
                             .toFile()),
-                    Paths.get(testConfig.getTestChannelPath(), "crypto-config-smartfactory-prod/peerOrganizations/",
-                            sampleOrgDomainName,
-                            format("/users/Admin@%s/msp/signcerts/Admin@%s-cert.pem", sampleOrgDomainName,
-                                    sampleOrgDomainName)).toFile());
+                    path1.toFile());
 
-          /*  SampleUser peerOrgAdmin = sampleStore.getMember("peerAdmin", orgName);
+          /*SampleUser peerOrgAdmin = sampleStore.getMember("peerAdmin", orgName);
             if (!peerOrgAdmin.isEnrolled()) {  //Preregistered admin only needs to be enrolled with Fabric caClient.
                 peerOrgAdmin.setEnrollment(ca.enroll(peerOrgAdmin.getName(), "dyackLBnOLRM"));
                 peerOrgAdmin.setMspId(mspid);
             }*/
             sampleOrg.setPeerAdmin(peerOrgAdmin); //A special user that can create channels, join peers and
+            sampleOrg.addUser(peerOrgAdmin);
+            user = peerOrgAdmin; //TODO
         } catch (Exception e) {
             throw new SmartLedgerClientException(e);
         }

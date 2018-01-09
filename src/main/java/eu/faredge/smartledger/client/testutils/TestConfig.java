@@ -45,7 +45,7 @@ public class TestConfig {
     private static ResourceBundle finder = ResourceBundle.getBundle("smart-ledger");
     public static final String HOST = finder.getString("FABRIC_HOST");
     public static final String PEER_HOST = finder.getString("FABRIC_PEER_HOST");
-
+    public static final String WALLET_DIR = finder.getString("WALLET_DIR");
 
     private static final Log logger = LogFactory.getLog(TestConfig.class);
 
@@ -319,7 +319,10 @@ public class TestConfig {
 
     public String getTestChannelPath() {
         return "src/main/java/fixture/sdkintegration/e2e-2Orgs/channel";
+    }
 
+    public String getHomeDirPath() {
+        return System.getProperty("user.home") + "/" + WALLET_DIR;
     }
 
     private String getDomainName(final String name) {

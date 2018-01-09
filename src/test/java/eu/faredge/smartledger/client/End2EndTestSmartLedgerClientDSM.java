@@ -5,14 +5,14 @@ package eu.faredge.smartledger.client;
 
 import eu.faredge.smartledger.client.base.ISmartLedgerClient;
 import eu.faredge.smartledger.client.exception.SmartLedgerClientException;
-import eu.faredge.smartledger.client.model.DCM;
 import eu.faredge.smartledger.client.model.DSM;
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.util.List;
 
-import static org.hamcrest.CoreMatchers.*;
-
+import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.*;
 
 public class End2EndTestSmartLedgerClientDSM {
@@ -22,13 +22,7 @@ public class End2EndTestSmartLedgerClientDSM {
 
     @BeforeClass
     public static void begin() {
-        client = new SmartLedgerClient(MYCHANNEL, "smartLedgerUser2");
-       /* try {
-            SmartLedgerClient smartLedgerClient = (SmartLedgerClient) client;
-            smartLedgerClient.installChaincode(false, false);
-        } catch (SmartLedgerClientException e) {
-            assertFalse(e.getMessage(), true);
-        }*/
+        client = new SmartLedgerClient(MYCHANNEL);
     }
 
     @AfterClass
