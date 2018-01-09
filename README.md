@@ -4,7 +4,7 @@
 
 The [Chaincode](https://github.com/ascatox/smart-ledger-client/blob/master/src/main/java/fixture/sdkintegration/gocc/smartfactory/src/github.com/smartfactory/smartfactory.go) in Go Language, to interact with the Smart Factory Lab, is bundled with the project.
 
-In order to use the Library, launch Fabric as described in the [official docs](https://hyperledger-fabric.readthedocs.io/en/latest/) in the section [Writing your First Application](https://hyperledger-fabric.readthedocs.io/en/latest/write_first_app.html) installing and instantiating the above chaincode.
+In order to use the Library, launch Fabric as described in the [official docs](https://hyperledger-fabric.readthedocs.io/en/latest/) in the section [Writing your First Application](https://hyperledger-fabric.readthedocs.io/en/latest/write_first_app.html) installing and instatiating the above chaincode.
 <br/>Copy your `crypto-config` directory under `<home-dir>/.smart-ledger-creds`.
 <br/>Edit the [properties file](https://github.com/ascatox/smart-ledger-client/blob/master/src/main/resources/smart-ledger.properties) with your settings, in particular the `FABRIC_HOST`and the `FABRIC_PEER_HOST` keys.
 <br/>Launch `mvn verify` to test your environment.
