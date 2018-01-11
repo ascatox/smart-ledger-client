@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.faredge.smartledger.client.base.ISmartLedgerClient;
 import eu.faredge.smartledger.client.exception.SmartLedgerClientException;
 import eu.faredge.smartledger.client.helper.SmartLedgerClientHelper;
-import eu.faredge.smartledger.client.model.*;
+import eu.faredge.smartledger.client.model.DCM;
+import eu.faredge.smartledger.client.model.DSM;
+import eu.faredge.smartledger.client.model.SampleOrg;
 import eu.faredge.smartledger.client.testutils.TestConfig;
 import eu.faredge.smartledger.client.util.Util;
 import eu.faredge.smartledger.client.util.Validator;
@@ -22,8 +24,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
-import static java.lang.String.format;
-
 public class SmartLedgerClient implements ISmartLedgerClient {
 
     public static final int TIMEOUT = TestConfig.TIMEOUT;
@@ -37,8 +37,8 @@ public class SmartLedgerClient implements ISmartLedgerClient {
         doSmartLedgerClient(SmartLedgerClientHelper.CHANNEL_NAME, null, null);
     }
 
-    public SmartLedgerClient(String channelName) {
-        doSmartLedgerClient(channelName, null, null);
+    public SmartLedgerClient(String username) {
+        doSmartLedgerClient(SmartLedgerClientHelper.CHANNEL_NAME, username, null);
     }
 
     public SmartLedgerClient(String channelName, String username) {
@@ -96,15 +96,6 @@ public class SmartLedgerClient implements ISmartLedgerClient {
 
             BlockEvent.TransactionEvent event = null;
             transactionEventCompletableFuture.get(TIMEOUT, TimeUnit.SECONDS);
-                /*.thenAccept((transactionEvent) -> {
-            if (isUpgrade)
-                Util.out("Chaincode upgraded correctly :-)");
-            else
-                Util.out("Chaincode instantiated correctly :-)");
-        }).exceptionally((error) -> {
-            Util.out(error.getMessage());
-            return null;
-        });*/
         } catch (TimeoutException | InterruptedException | ExecutionException e) {
             Util.out(e.getMessage());
         } catch (Exception e) {
@@ -200,7 +191,14 @@ public class SmartLedgerClient implements ISmartLedgerClient {
 
     @Override
     public List<DSM> getAllDataSourceManifestsByDCM(DCM dcm) throws SmartLedgerClientException {
-        return null;
+        if (null == dcm || null == dcm.getDsds() || dcm.getDsds().size() == 0)
+            throw new IllegalArgumentException("Error in method getAllDataSourceManifestsByDCM " +
+                    "list of dsds  " +
+                    "cannot be empty or null");
+        final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, "qGetAllDSMSByDsds", dcm
+                .getDsds()
+                .toArray(new String[dcm.getDsds().size()]));
+        return Util.extractDSMFromPayloads(payloads);
     }
 
     /**
