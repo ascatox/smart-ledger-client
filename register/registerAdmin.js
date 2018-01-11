@@ -9,6 +9,7 @@ var os = require('os');
 var argv = require('yargs')
 .usage('Usage: $0 -h [string] -m [string] ')
 .alias('h','host')
+.alias
 .alias('m','mspid')
 .describe('h', 'Enter CA Server Host default: http://localhost:7054')
 .describe('m', 'Enter MSPID name default: Org1MSP')

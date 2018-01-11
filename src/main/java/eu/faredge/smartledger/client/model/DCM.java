@@ -7,6 +7,8 @@ import org.hibernate.validator.constraints.URL;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Pattern;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Data Consumer Manifest is a manifest used to describe technologies consuming data.
@@ -20,7 +22,7 @@ public class DCM implements Serializable {
     private String uri;
     @Pattern(regexp = Util.REGEX_MAC_ADDRESS, message = Validator.MAC_ADDRESS_INVALID_MESSAGE)
     private String macAddress;
-    private String dsds; //ex: dsd://myspace/mydataXYZ; dsd://myspace/mydata123; dsd://myotherspace/mydata456
+    private List<String> dsds; //ex: dsd://myspace/mydataXYZ; dsd://myspace/mydata123; dsd://myotherspace/mydata456
     private String type;
 
     @Override
@@ -48,7 +50,7 @@ public class DCM implements Serializable {
         this.physicalArtifact = "";
         this.uri = ""; //Primary Key
         this.macAddress = "";
-        this.dsds = "";
+        this.dsds = new ArrayList<>();
         this.type = "DCM";
 
     }
@@ -87,11 +89,12 @@ public class DCM implements Serializable {
         this.macAddress = macAddress;
     }
 
-    public String getDsds() {
+
+    public List<String> getDsds() {
         return dsds;
     }
 
-    public void setDsds(String dsds) {
+    public void setDsds(List<String> dsds) {
         this.dsds = dsds;
     }
 

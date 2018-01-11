@@ -20,6 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 
@@ -252,7 +253,8 @@ public class SmartLedgerClient implements ISmartLedgerClient {
         } catch (JsonProcessingException e) {
             Util.fail("Error in json conversion! " + e.getMessage());
         }
-        String[] args = {dcm.getPhysicalArtifact(), dcm.getUri(), dcm.getMacAddress(), dcm.getDsds()};
+        String[] args = {dcm.getPhysicalArtifact(), dcm.getUri(), dcm.getMacAddress(), dcm.getDsds().stream().collect
+                (Collectors.joining(";"))};
         BlockEvent.TransactionEvent event = null;
         try {
             SmartLedgerClientHelper.invokeChaincode(channel,
