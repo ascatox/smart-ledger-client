@@ -12,13 +12,11 @@ var argv = require('yargs')
 .alias('a','affiliation')
 .alias('h','host')
 .alias('m','mspid')
-.alias('t','type')
 .alias('o','attrs')
-.describe('e', 'Enter user identifier')
+.describe('e', 'Enter peerAdmin identifier')
 .describe('a', 'Enter affiliation default: org1.department1')
 .describe('h', 'Enter CA Server Host default: http://localhost:7054')
 .describe('m', 'Enter MSPID name default: Org1MSP')
-.describe('t', 'Enter type of this identity: user or peer')
 .describe('o', 'Enter attrs name default: ""')
 .demandOption(['e'])
 .argv;
@@ -35,7 +33,7 @@ var affiliationCode = argv.a || 'org1.department1';
 var host = argv.h || 'http://localhost:7054';
 var mspid = argv.m || 'Org1MSP';
 var attrs = argv.o || '';
-var type = argv.t || 'user';
+var type = 'peer';
 
 userId = userId.trim();
 affiliationCode = affiliationCode.trim();
@@ -43,11 +41,10 @@ host = host.trim();
 mspid = mspid.trim();
 attrs = attrs.trim() || '';
 
-console.log('User Id given is: ' + argv.e);
+console.log('PeerAdmin Id given is: ' + argv.e);
 console.log('Affiliation code given is: ' + argv.a);
 console.log('CA Server HOST: '+ host);
 console.log('MSPID name: '+ mspid);
-console.log('type: '+ type);
 console.log('attrs: '+ attrs);
 
 // create the key value store as defined in the fabric-client/config/default.json 'key-value-store' setting
