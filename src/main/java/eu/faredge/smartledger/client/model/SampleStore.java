@@ -221,7 +221,7 @@ public class SampleStore {
 
             // Create the SampleUser and try to restore it's state from the key value store (if found).
             sampleUser = new SampleUser();
-            String storePathAbsolute = System.getProperty("user.home") + "/" + storePath + "/";
+            String storePathAbsolute = System.getProperty("user.home") + storePath + "/";
             ObjectMapper mapper = new ObjectMapper();
             CaUser caUser = mapper.readValue(new FileInputStream(storePathAbsolute + name), CaUser.class);
             sampleUser.setMspId(caUser.getMspid());

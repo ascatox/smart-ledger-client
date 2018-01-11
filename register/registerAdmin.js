@@ -19,7 +19,7 @@ var fabric_client = new Fabric_Client();
 var fabric_ca_client = null;
 var admin_user = null;
 var member_user = null;
-var store_path = path.join(os.homedir(), '.hfc-key-store-dual');
+var store_path = path.join(__dirname, 'hfc-key-store');
 console.log(' Store path:'+ store_path);
 
 var host = argv.h || 'http://localhost:7054';

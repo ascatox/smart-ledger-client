@@ -30,12 +30,14 @@ public class SmartLedgerClientHelper {
     private static ResourceBundle finder = ResourceBundle.getBundle("smart-ledger");
     private static final TestConfig testConfig = TestConfig.getConfig();
     private static final String TEST_FIXTURES_PATH = finder.getString("TEST_FIXTURES_PATH");
-
     private static final String CHAIN_CODE_NAME = finder.getString("CHAIN_CODE_NAME");
     private static final String CHAIN_CODE_PATH = finder.getString("CHAIN_CODE_PATH");
     private static final String CHAIN_CODE_VERSION = finder.getString("CHAIN_CODE_VERSION");
+    private static final String WALLET_DIR = finder.getString("WALLET_DIR");
+    private static final String USER_ID = finder.getString("USER_ID");
+    private static final String PEER_ADMIN_ID = finder.getString("PEER_ADMIN_ID");
 
-    private static final String FOO_CHANNEL_NAME = finder.getString("CHANNEL_NAME");
+    public static final String CHANNEL_NAME = finder.getString("CHANNEL_NAME");
 
     private static final byte[] EXPECTED_EVENT_DATA = "!".getBytes(UTF_8);
     private static final String EXPECTED_EVENT_NAME = "event";
@@ -88,73 +90,16 @@ public class SmartLedgerClientHelper {
         try {
             ////////////////////////////
             // Setup client
-
             client.setCryptoSuite(CryptoSuite.Factory.getCryptoSuite());
-            // client.setMemberServices(peerOrg1FabricCA);
-
-            ////////////////////////////
-            //Set up USERS
-
-            //Persistence is not part of SDK. Sample file store is for demonstration purposes only!
-            //   MUST be replaced with more robust application implementation  (Database, LDAP)
-            File sampleStoreFile = new File(System.getProperty("user.home") + "/.smartLedgerClientProps" +
-                    ".properties");
-            //if (sampleStoreFile.exists()) { //For testing start fresh
-            //  sampleStoreFile.delete();
-            //}
-
-            final SampleStore sampleStore = new SampleStore(sampleStoreFile);
+            final SampleStore sampleStore = new SampleStore();
             HFCAClient ca = sampleOrg.getCAClient();
-
-            final String orgName = sampleOrg.getName();
-            final String mspid = sampleOrg.getMSPID();
             ca.setCryptoSuite(CryptoSuite.Factory.getCryptoSuite());
-/*
-            admin = sampleStore.getMember(TEST_ADMIN_NAME, orgName);
-            if (!admin.isEnrolled()) {  //Preregistered admin only needs to be enrolled with Fabric caClient.
-                admin.setEnrollment(ca.enroll(admin.getName(), "adminpw"));
-                admin.setMspId(mspid);
-            }
-            sampleOrg.setAdmin(admin); // The admin of this org --*/
-
-            user = sampleStore.getMember(userName, sampleOrg.getName());
-//TODO @ascatox Understand how to mark an CaUser as registered and enrolled
-            /*if (!user.isRegistered()) {  // users need to be registered AND enrolled
-                RegistrationRequest rr = new RegistrationRequest(user.getName(), "org1.department1");
-                user.setEnrollmentSecret(ca.register(rr, admin));
-                enrollmentSecret = user.getEnrollmentSecret();
-            }
-            if (!user.isEnrolled()) {
-                user.setEnrollment(ca.enroll(user.getName(), enrollmentSecret));
-                user.setMspId(mspid);
-            }*/
-            //sampleOrg.addUser(user); //Remember user belongs to this Org
-            final String sampleOrgName = sampleOrg.getName();
-            final String sampleOrgDomainName = sampleOrg.getDomainName();
-
-            final Path path = Paths.get(testConfig.getHomeDirPath(),
-                    "crypto-config/peerOrganizations/",
-                    sampleOrgDomainName, format("/users/Admin@%s/msp/keystore", sampleOrgDomainName));
-            final Path path1 = Paths.get(testConfig.getHomeDirPath(),
-                    "crypto-config/peerOrganizations/",
-                    sampleOrgDomainName,
-                    format("/users/Admin@%s/msp/signcerts/Admin@%s-cert.pem", sampleOrgDomainName,
-                            sampleOrgDomainName));
-
-            SampleUser peerOrgAdmin = sampleStore.getMember(sampleOrgName + "Admin", sampleOrgName, sampleOrg
-                            .getMSPID(),
-                    Util.findFileSk(path
-                            .toFile()),
-                    path1.toFile());
-
-          /*SampleUser peerOrgAdmin = sampleStore.getMember("peerAdmin", orgName);
-            if (!peerOrgAdmin.isEnrolled()) {  //Preregistered admin only needs to be enrolled with Fabric caClient.
-                peerOrgAdmin.setEnrollment(ca.enroll(peerOrgAdmin.getName(), "dyackLBnOLRM"));
-                peerOrgAdmin.setMspId(mspid);
-            }*/
+            if (StringUtils.isEmpty(userName)) userName = USER_ID;
+            user = sampleStore.getMember(userName, sampleOrg.getName(), WALLET_DIR);
+            SampleUser peerOrgAdmin = sampleStore.getMember(PEER_ADMIN_ID, sampleOrg.getName(),
+                    WALLET_DIR);
             sampleOrg.setPeerAdmin(peerOrgAdmin); //A special user that can create channels, join peers and
-            sampleOrg.addUser(peerOrgAdmin);
-            user = peerOrgAdmin; //TODO
+            // initialize channels
         } catch (Exception e) {
             throw new SmartLedgerClientException(e);
         }
@@ -368,8 +313,8 @@ public class SmartLedgerClientHelper {
             return newChannel;
         } catch (InvalidArgumentException e) {
             throw new SmartLedgerClientException(e);
-       /* } catch (TransactionException e) {
-            throw new SmartLedgerClientException(e); */
+        /*} catch (TransactionException e) {
+            throw new SmartLedgerClientException(e);*/
         } catch (Exception e) {
             throw new SmartLedgerClientException(e);
         }
@@ -550,7 +495,7 @@ public class SmartLedgerClientHelper {
         // Install Proposal Request
         try {
             final String channelName = channel.getName();
-            boolean isFooChain = FOO_CHANNEL_NAME.equals(channelName);
+            boolean isFooChain = CHANNEL_NAME.equals(channelName);
             Util.out("Running channel %s", channelName);
             channel.setTransactionWaitTime(testConfig.getTransactionWaitTime());
             channel.setDeployWaitTime(testConfig.getDeployWaitTime());

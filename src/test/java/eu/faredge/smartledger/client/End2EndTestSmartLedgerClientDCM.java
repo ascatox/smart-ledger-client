@@ -17,12 +17,11 @@ import static org.junit.Assert.*;
 
 public class End2EndTestSmartLedgerClientDCM {
 
-    static final String MYCHANNEL = "mychannel";
     static ISmartLedgerClient client = null;
 
     @BeforeClass
     public static void begin() {
-        client = new SmartLedgerClient(MYCHANNEL);
+        client = new SmartLedgerClient();
     }
 
     @AfterClass

@@ -12,11 +12,13 @@ var argv = require('yargs')
 .alias('a','affiliation')
 .alias('h','host')
 .alias('m','mspid')
+.alias('t','type')
 .alias('o','attrs')
-.describe('e', 'Enter enrollmentId')
+.describe('e', 'Enter user identifier')
 .describe('a', 'Enter affiliation default: org1.department1')
 .describe('h', 'Enter CA Server Host default: http://localhost:7054')
 .describe('m', 'Enter MSPID name default: Org1MSP')
+.describe('t', 'Enter type of this identity: user or peer')
 .describe('o', 'Enter attrs name default: ""')
 .demandOption(['e'])
 .argv;
@@ -25,7 +27,7 @@ var fabric_client = new Fabric_Client();
 var fabric_ca_client = null;
 var admin_user = null;
 var member_user = null;
-var store_path = path.join(os.homedir(), '.hfc-key-store-dual');
+var store_path = path.join(__dirname, 'hfc-key-store');
 console.log(' Store path:' + store_path);
 
 var userId = argv.e;
@@ -33,6 +35,7 @@ var affiliationCode = argv.a || 'org1.department1';
 var host = argv.h || 'http://localhost:7054';
 var mspid = argv.m || 'Org1MSP';
 var attrs = argv.o || '';
+var type = argv.t || 'user';
 
 userId = userId.trim();
 affiliationCode = affiliationCode.trim();
@@ -40,10 +43,11 @@ host = host.trim();
 mspid = mspid.trim();
 attrs = attrs.trim() || '';
 
-console.log('Enrollment Id given is: ' + argv.e);
+console.log('User Id given is: ' + argv.e);
 console.log('Affiliation code given is: ' + argv.a);
 console.log('CA Server HOST: '+ host);
 console.log('MSPID name: '+ mspid);
+console.log('type: '+ type);
 console.log('attrs: '+ attrs);
 
 // create the key value store as defined in the fabric-client/config/default.json 'key-value-store' setting
@@ -79,7 +83,7 @@ Fabric_Client.newDefaultKeyValueStore({ path: store_path
     // first need to register the user with the CA server
     var registerData = {enrollmentID: userId, affiliation: affiliationCode};
     if (attrs)
-        registerData = {enrollmentID: userId, affiliation: affiliationCode, attrs: attrs};
+        registerData = {enrollmentID: userId, affiliation: affiliationCode, attrs: attrs, type: type};
     return fabric_ca_client.register(registerData, admin_user);
 }).then((secret) => {
     // next we need to enroll the user with CA server

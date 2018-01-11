@@ -32,6 +32,10 @@ public class SmartLedgerClient implements ISmartLedgerClient {
     private static List<SampleOrg> sampleOrgs;
     private static final TestConfig testConfig = TestConfig.getConfig();
 
+    public SmartLedgerClient() {
+        doSmartLedgerClient(SmartLedgerClientHelper.CHANNEL_NAME, null, null);
+    }
+
     public SmartLedgerClient(String channelName) {
         doSmartLedgerClient(channelName, null, null);
     }
