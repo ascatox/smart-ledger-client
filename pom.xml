@@ -72,6 +72,7 @@
                     </includes>
                     <excludes>
                         <exclude>**/*Unit*.java</exclude>
+                        <exclude>End2EndTestInstallChaincode.java</exclude>
                     </excludes>
                 </configuration>
                 <executions>
