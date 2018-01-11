@@ -7,12 +7,15 @@ var path = require('path');
 var util = require('util');
 var os = require('os');
 var argv = require('yargs')
-.usage('Usage: $0 -h [string] -m [string] ')
+.usage('Usage: $0 -p [string]  -h [string] -m [string] ')
+.alias('p','password')
 .alias('h','host')
 .alias
 .alias('m','mspid')
+.describe('p', 'Enter Admin password default: adminpw')
 .describe('h', 'Enter CA Server Host default: http://localhost:7054')
 .describe('m', 'Enter MSPID name default: Org1MSP')
+.demandOption(['p'])
 .argv;
 
 //
@@ -25,6 +28,7 @@ console.log(' Store path:'+ store_path);
 
 var host = argv.h || 'http://localhost:7054';
 var mspid = argv.m || 'Org1MSP';
+var password = argv.p || 'adminpw';
 
 host = host.trim();
 mspid = mspid.trim();
@@ -61,7 +65,7 @@ Fabric_Client.newDefaultKeyValueStore({ path: store_path
         // need to enroll it with CA server
         return fabric_ca_client.enroll({
           enrollmentID: 'admin',
-          enrollmentSecret: 'adminpw'
+          enrollmentSecret: password
         }).then((enrollment) => {
           console.log('Successfully enrolled admin user "admin"');
           return fabric_client.createUser(
