@@ -3,9 +3,10 @@
  */
 package eu.faredge.smartledger.client;
 
+import eu.faredge.dm.dcm.DCM;
 import eu.faredge.smartledger.client.base.ISmartLedgerClient;
 import eu.faredge.smartledger.client.exception.SmartLedgerClientException;
-import eu.faredge.smartledger.client.model.DCM;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -34,9 +35,9 @@ public class End2EndTestSmartLedgerClientDCM {
     public void testGetDataConsumerManifestByUri() {
         try {
             String uri = "http://www.eng.it";
-            DCM dataConsumerManifestByUri = client.getDataConsumerManifestByUri(uri);
+            DCM dataConsumerManifestByUri = client.getDataConsumerManifestById(uri);
             assertNotNull(dataConsumerManifestByUri);
-            assertFalse(dataConsumerManifestByUri.isEmpty());
+            assertFalse(StringUtils.isEmpty(dataConsumerManifestByUri.getId()));
         } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);
         }
@@ -49,7 +50,7 @@ public class End2EndTestSmartLedgerClientDCM {
             String mac = "321:654:987";
             DCM dataConsumerManifestByMacAddress = client.getDataConsumerManifestByMacAddress(mac);
             assertNotNull(dataConsumerManifestByMacAddress);
-            assertFalse(dataConsumerManifestByMacAddress.isEmpty());
+            assertFalse(StringUtils.isEmpty(dataConsumerManifestByMacAddress.getId()));
         } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);
         }
@@ -70,8 +71,7 @@ public class End2EndTestSmartLedgerClientDCM {
     public void testRegisterDCM() {
         try {
             DCM dcm = new DCM();
-            dcm.setPhysicalArtifact("DEVICE30");
-            dcm.setUri("http://www.overit.it");
+            dcm.setId("http://www.overit.it");
             dcm.setMacAddress("b8:e8:56:41:43:05");
             client.registerDCM(dcm);
             List<DCM> all = client.getAllDataConsumerManifests();
@@ -87,14 +87,13 @@ public class End2EndTestSmartLedgerClientDCM {
     public void testRemoveDCM() {
         try {
             DCM dcm = new DCM();
-            dcm.setPhysicalArtifact("DEVICE31");
-            dcm.setUri("http://www.overit.it");
+            dcm.setId("http://www.overit.it");
             dcm.setMacAddress("b8:e8:56:41:43:05");
             client.registerDCM(dcm);
-            client.removeDCM(dcm.getUri());
+            client.removeDCM(dcm.getId());
             DCM back = null;
             try {
-                back = client.getDataConsumerManifestByUri(dcm.getUri());
+                back = client.getDataConsumerManifestById(dcm.getId());
             } catch (SmartLedgerClientException e) {
                 e.printStackTrace();
             } catch (Exception e) {
@@ -110,14 +109,13 @@ public class End2EndTestSmartLedgerClientDCM {
     public void testEditRegisteredDCMWhenIsPresent() {
         try {
             DCM dcm = new DCM();
-            dcm.setPhysicalArtifact("DEVICE31");
-            dcm.setUri("http://www.opcua.com");
+            dcm.setId("http://www.opcua.com");
             dcm.setMacAddress("b8:e8:56:41:43:08");
             client.registerDCM(dcm);
-            DCM back = client.getDataConsumerManifestByUri(dcm.getUri());
+            DCM back = client.getDataConsumerManifestById(dcm.getId());
             assertEquals(dcm, back);
             client.editRegisteredDCM(dcm);
-            DCM back2 = client.getDataConsumerManifestByUri(dcm.getUri());
+            DCM back2 = client.getDataConsumerManifestById(dcm.getId());
             assertNotEquals(back2, not(dcm));
         } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);

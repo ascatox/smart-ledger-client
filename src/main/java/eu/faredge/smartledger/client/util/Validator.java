@@ -1,7 +1,11 @@
+
 package eu.faredge.smartledger.client.util;
 
-import eu.faredge.smartledger.client.model.DCM;
-import eu.faredge.smartledger.client.model.DSM;
+import eu.faredge.dm.dcm.DCM;
+import eu.faredge.dm.dsm.DSM;
+import eu.faredge.smartledger.client.SmartLedgerClient;
+import eu.faredge.smartledger.client.exception.SmartLedgerClientException;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
@@ -13,7 +17,7 @@ public class Validator {
     private javax.validation.Validator validator;
     public static final String MAC_ADDRESS_INVALID_MESSAGE = "MAC Address is invalid";
     public static final String URI_INVALID_MESSAGE = "Uri should be a valid URL";
-    public static final String URI_CANNOT_BE_EMPTY_MESSAGE = "uri cannot be empty";
+    public static final String ID_CANNOT_BE_EMPTY_MESSAGE = "Model and id cannot be empty";
     public static final String PHYSICAL_ARTIFACT_CANNOT_BE_EMPTY_MESSAGE = "physicalArtifact cannot be empty";
 
 
@@ -24,22 +28,17 @@ public class Validator {
     }
 
 
-    public void validateBean(DSM dsm) {
-        Set<ConstraintViolation<DSM>> violations = validator.validate(dsm);
-        for (ConstraintViolation<DSM> violation : violations) {
-            Util.fail(violation.getMessage());
-        }
-
+    public void validateBean(DSM dsm) throws SmartLedgerClientException {
+        if (null == dsm || StringUtils.isEmpty(dsm.getId()))
+            throw new SmartLedgerClientException(ID_CANNOT_BE_EMPTY_MESSAGE);
     }
 
 
-    public void validateBean(DCM dcm) {
-        Set<ConstraintViolation<DCM>> violations = validator.validate(dcm);
-        for (ConstraintViolation<DCM> violation : violations) {
-            Util.fail(violation.getMessage());
-        }
-
+    public void validateBean(DCM dcm) throws SmartLedgerClientException {
+        if (null == dcm || StringUtils.isEmpty(dcm.getId()))
+            throw new SmartLedgerClientException(ID_CANNOT_BE_EMPTY_MESSAGE);
     }
 
 
 }
+

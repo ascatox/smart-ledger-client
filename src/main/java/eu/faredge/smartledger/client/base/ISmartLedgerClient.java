@@ -1,8 +1,9 @@
 package eu.faredge.smartledger.client.base;
 
+import eu.faredge.dm.dcd.DCD;
+import eu.faredge.dm.dcm.DCM;
+import eu.faredge.dm.dsm.DSM;
 import eu.faredge.smartledger.client.exception.SmartLedgerClientException;
-import eu.faredge.smartledger.client.model.DCM;
-import eu.faredge.smartledger.client.model.DSM;
 
 import java.util.List;
 
@@ -13,9 +14,10 @@ public interface ISmartLedgerClient {
      * This method is used to create a DSM object in the Ledger
      *
      * @param dsm
+     * @return id
      * @throws SmartLedgerClientException
      */
-    void registerDSM(DSM dsm) throws SmartLedgerClientException;
+    String registerDSM(DSM dsm) throws SmartLedgerClientException;
 
     /**
      * This method performs a modify in already created DSM
@@ -34,23 +36,24 @@ public interface ISmartLedgerClient {
     void editRegisteredDCM(DCM dcm) throws SmartLedgerClientException;
 
     /**
-     * This method is used to create a DCM object in the ledger
+     * This method is used to create a DCM object in the Ledger
      *
      * @param dcm
+     * @return id
      * @throws SmartLedgerClientException
      */
-    void registerDCM(DCM dcm) throws SmartLedgerClientException;
+    String registerDCM(DCM dcm) throws SmartLedgerClientException;
 
     /**
      * This method gives us a DSM object if present in the ledger, it uses the URI, a unique key of DSM
      * It gives us a null object if the object is not present
      *
-     * @param uri
+     * @param id
      * @return
      * @throws SmartLedgerClientException
      */
 
-    DSM getDataSourceManifestByUri(String uri) throws SmartLedgerClientException;
+    DSM getDataSourceManifestById(String id) throws SmartLedgerClientException;
 
     /**
      * This method gives us a DSM object if present in the ledger, it uses the MACAddress, a unique key of DSM
@@ -76,11 +79,11 @@ public interface ISmartLedgerClient {
      * This method gives us a DCM object if present in the ledger, it uses the URI, a unique key of DCM
      * It gives us a null object if the object is not present
      *
-     * @param uri
+     * @param id
      * @return
      * @throws SmartLedgerClientException
      */
-    DCM getDataConsumerManifestByUri(String uri) throws SmartLedgerClientException;
+    DCM getDataConsumerManifestById(String id) throws SmartLedgerClientException;
 
 
     /**
@@ -104,11 +107,12 @@ public interface ISmartLedgerClient {
     /**
      * This method gives us a List of DSM objects compatible and of interest for the given DCM using definitions
      * It gives us a null object if the objects are not present
+     *
      * @param dcm
      * @return
      * @throws SmartLedgerClientException
      */
-    List<DSM> getAllDataSourceManifestsByDCM(DCM dcm) throws SmartLedgerClientException;
+    List<DSM> getCompatibleDSM(DCM dcm) throws SmartLedgerClientException;
 
 
     //void installChaincode(boolean instantiate, boolean upgrade) throws SmartLedgerClientException;
@@ -134,16 +138,34 @@ public interface ISmartLedgerClient {
     /**
      * This method allows to remove a DSM.
      *
-     * @param uri
+     * @param id
      * @throws SmartLedgerClientException
      */
-    void removeDSM(String uri) throws SmartLedgerClientException;
+    void removeDSM(String id) throws SmartLedgerClientException;
 
     /**
      * This method allows to remove a DCM.
      *
-     * @param uri
+     * @param id
      * @throws SmartLedgerClientException
      */
-    void removeDCM(String uri) throws SmartLedgerClientException;
+    void removeDCM(String id) throws SmartLedgerClientException;
+
+    /**
+     * This method allows to create A DCD Data Channel Descriptor
+     *
+     * @param dcd
+     * @return
+     * @throws SmartLedgerClientException
+     */
+    String registerDCD(DCD dcd) throws SmartLedgerClientException;
+
+    /**
+     * This method allows to remove A DCD
+     *
+     * @param id
+     * @throws SmartLedgerClientException
+     */
+    void removeDCD(String id) throws SmartLedgerClientException;
+
 }

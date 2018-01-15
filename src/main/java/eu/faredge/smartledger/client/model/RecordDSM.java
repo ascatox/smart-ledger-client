@@ -1,6 +1,8 @@
+
 package eu.faredge.smartledger.client.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import eu.faredge.dm.dsm.DSM;
 
 public class RecordDSM {
     private String key;
@@ -23,3 +25,4 @@ public class RecordDSM {
         this.record = record;
     }
 }
+

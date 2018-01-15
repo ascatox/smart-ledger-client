@@ -1,3 +1,4 @@
+/*
 package eu.faredge.smartledger.client.model;
 
 import eu.faredge.smartledger.client.util.Util;
@@ -10,9 +11,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Data Consumer Manifest is a manifest used to describe technologies consuming data.
- */
 public class DCM implements Serializable {
 
     @NotEmpty(message = Validator.PHYSICAL_ARTIFACT_CANNOT_BE_EMPTY_MESSAGE)
@@ -110,3 +108,4 @@ public class DCM implements Serializable {
         return (this.getUri().isEmpty() || this.getMacAddress().isEmpty());
     }
 }
+*/

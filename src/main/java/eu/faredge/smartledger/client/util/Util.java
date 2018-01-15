@@ -17,8 +17,8 @@
 package eu.faredge.smartledger.client.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import eu.faredge.smartledger.client.model.DCM;
-import eu.faredge.smartledger.client.model.DSM;
+import eu.faredge.dm.dcm.DCM;
+import eu.faredge.dm.dsm.DSM;
 import eu.faredge.smartledger.client.model.RecordDCM;
 import eu.faredge.smartledger.client.model.RecordDSM;
 import org.apache.commons.compress.archivers.ArchiveEntry;

@@ -1,3 +1,4 @@
+/*
 package eu.faredge.smartledger.client.model;
 
 import eu.faredge.smartledger.client.util.Util;
@@ -7,9 +8,7 @@ import org.hibernate.validator.constraints.URL;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Pattern;
 import java.io.Serializable;
-/**
- * Data Consumer Manifest is a manifest used to describe technologies producing data.
- */
+
 public final class DSM implements Serializable {
 
 
@@ -126,3 +125,4 @@ public final class DSM implements Serializable {
         return (this.getUri().isEmpty() || this.getMacAddress().isEmpty());
     }
 }
+*/
