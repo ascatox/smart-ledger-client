@@ -10,7 +10,6 @@ var argv = require('yargs')
 .usage('Usage: $0 -p [string]  -h [string] -m [string] ')
 .alias('p','password')
 .alias('h','host')
-.alias
 .alias('m','mspid')
 .describe('p', 'Enter Admin password default: adminpw')
 .describe('h', 'Enter CA Server Host default: http://localhost:7054')
