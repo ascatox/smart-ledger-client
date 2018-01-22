@@ -3,6 +3,7 @@
  */
 package eu.faredge.smartledger.client;
 
+import eu.faredge.dm.dcm.DCM;
 import eu.faredge.dm.dsm.DSM;
 import eu.faredge.smartledger.client.base.ISmartLedgerClient;
 import eu.faredge.smartledger.client.exception.SmartLedgerClientException;
@@ -22,7 +23,7 @@ public class End2EndTestSmartLedgerClientDSM {
 
     @BeforeClass
     public static void begin() {
-        client = new SmartLedgerClient("mychannel", "user1");
+        client = new SmartLedgerClient();
     }
 
     @AfterClass
@@ -31,7 +32,7 @@ public class End2EndTestSmartLedgerClientDSM {
     }
 
     @Test
-    public void testGetDataSourceManifestByUri() {
+    public void testGetDataSourceManifestById() {
         try {
             String uri = "http://www.google.com";
             DSM dataSourceManifestByUri = client.getDataSourceManifestById(uri);
@@ -67,6 +68,18 @@ public class End2EndTestSmartLedgerClientDSM {
     }
 
     @Test
+    public void testGetGetCompatibleDSM() {
+        try {
+            testRegisterDSM();
+            List<DSM> allDSMs = client.getCompatibleDSM( testRegisterDCM());
+            assertNotNull(allDSMs);
+            assertFalse(allDSMs.isEmpty());
+        } catch (SmartLedgerClientException e) {
+            assertFalse(e.getMessage(), true);
+        }
+    }
+
+    @Test
     public void testRegisterDSM() {
         try {
             DSM dsm = initDSM();
@@ -79,8 +92,25 @@ public class End2EndTestSmartLedgerClientDSM {
         }
     }
 
+
+    private DCM testRegisterDCM() {
+        try {
+            DCM dcm = new DCM();
+            dcm.setId("http://www.overit.it");
+            dcm.setMacAddress("b8:e8:56:41:43:05");
+            client.registerDCM(dcm);
+            List<DCM> all = client.getAllDataConsumerManifests();
+            assertNotNull(all);
+            assertFalse(all.isEmpty());
+            return dcm;
+        } catch (SmartLedgerClientException e) {
+            assertFalse(e.getMessage(), true);
+        }
+        return null;
+    }
+
     @Test
-    public void testRegisterDSMByUri() {
+    public void testRegisterDSMById() {
         try {
             DSM dsm = new DSM();
             dsm.setId("http://www.mht.it");
@@ -124,7 +154,7 @@ public class End2EndTestSmartLedgerClientDSM {
             DSM dsm = new DSM();
             dsm.setId("http://www.eng-mo.it");
             dsm.setMacAddress("b8:e8:56:41:43:07");
-           setDataDefinitionParameters(dsm);
+            setDataDefinitionParameters(dsm);
             client.registerDSM(dsm);
             DSM dsmBack = client.getDataSourceManifestById(dsm.getId());
             assertEquals(dsm, dsmBack);

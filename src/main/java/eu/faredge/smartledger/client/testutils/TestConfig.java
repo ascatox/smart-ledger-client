@@ -42,10 +42,14 @@ import org.hyperledger.fabric.sdk.helper.Utils;
 
 
 public class TestConfig {
+
     private static ResourceBundle finder = ResourceBundle.getBundle("smart-ledger");
+    public static final int NUMBER_OF_PEERS = Integer.parseInt(finder.getString("NUMBER_OF_PEERS"));
+    public static final int NUMBER_OF_ORGS = Integer.parseInt(finder.getString("NUMBER_OF_ORGS"));
     public static final String HOST = finder.getString("FABRIC_HOST");
     public static final String PEER_HOST = finder.getString("FABRIC_PEER_HOST");
     public static final String WALLET_DIR = finder.getString("WALLET_DIR");
+    public static final String CRYPTO_CONFIG_DIR = finder.getString("CRYPTO_CONFIG_DIR");
 
     private static final Log logger = LogFactory.getLog(TestConfig.class);
 
@@ -94,13 +98,17 @@ public class TestConfig {
             defaultProperty(INVOKEWAITTIME, "100000");
             defaultProperty(DEPLOYWAITTIME, "120000");
             defaultProperty(PROPOSALWAITTIME, "120000");
+
             defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg1.mspid", "Org1MSP");
             defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg1.domname", "org1.example.com");
             defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg1.ca_location", "http://" + HOST + ":7054");
             defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg1.caName", "ca.example.com");
-            defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg1.peer_locations", "peer0.org1.example.com@grpc://" +
+            defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg1.peer_locations_0", "peer0.org1.example.com@grpc://" +
                     PEER_HOST
                     + ":7051,");
+            defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg1.peer_locations_1", "peer1.org1.example.com@grpc://" +
+                    PEER_HOST
+                    + ":8051,");
             //" peer1.org1.example.com@grpc://localhost:7053");
             defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg1.orderer_locations", "orderer.example.com@grpc://" + HOST
                     + ":7050");
@@ -108,6 +116,29 @@ public class TestConfig {
                             PEER_HOST + ":7053"
                     //+ ",peer1.org1.example.com@grpc://" + PEER_HOST + ":7058"
             );
+
+            if (NUMBER_OF_ORGS == 2) {
+                defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg2.mspid", "Org2MSP");
+                defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg2.domname", "org2.example.com");
+                defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg2.ca_location", "http://" + HOST + ":7054");
+                defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg2.caName", "ca.example.com");
+                defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg2.peer_locations_0", "peer0.org2.example.com@grpc://" +
+                        PEER_HOST
+                        + ":7051,");
+                defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg2.peer_locations_1", "peer1.org2.example.com@grpc://" +
+                        PEER_HOST
+                        + ":8051,");
+                //" peer1.org1.example.com@grpc://localhost:7053");
+                defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg2.orderer_locations", "orderer.example.com@grpc://" +
+                        HOST
+
+                        + ":7050");
+                defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg2.eventhub_locations", "peer0.org2.example.com@grpc://" +
+                                PEER_HOST + ":8053"
+                        //+ ",peer1.org1.example.com@grpc://" + PEER_HOST + ":7058"
+                );
+            }
+
 //            defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg2.mspid", "Org2MSP");
 //            defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg2.domname", "org2.example.com");
 //            defaultProperty(INTEGRATIONTESTS_ORG + "peerOrg2.ca_location", "http://localhost:8054");
@@ -142,13 +173,16 @@ public class TestConfig {
                 final SampleOrg sampleOrg = org.getValue();
                 final String orgName = org.getKey();
 
-                String peerNames = sdkProperties.getProperty(INTEGRATIONTESTS_ORG + orgName + ".peer_locations");
-                String[] ps = peerNames.split("[ \t]*,[ \t]*");
-                for (String peer : ps) {
-                    String[] nl = peer.split("[ \t]*@[ \t]*");
-                    sampleOrg.addPeerLocation(nl[0], grpcTLSify(nl[1]));
+                String[] ps = null;
+                for (int i = 0; i < NUMBER_OF_PEERS; i++) {
+                    String peerNames = sdkProperties.getProperty(INTEGRATIONTESTS_ORG + orgName + ".peer_locations_"
+                            + i);
+                    ps = peerNames.split("[ \t]*,[ \t]*");
+                    for (String peer : ps) {
+                        String[] nl = peer.split("[ \t]*@[ \t]*");
+                        sampleOrg.addPeerLocation(nl[0], grpcTLSify(nl[1]));
+                    }
                 }
-
                 final String domainName = sdkProperties.getProperty(INTEGRATIONTESTS_ORG + orgName + ".domname");
 
                 sampleOrg.setDomainName(domainName);
@@ -319,6 +353,10 @@ public class TestConfig {
 
     public String getTestChannelPath() {
         return "src/main/java/fixture/sdkintegration/e2e-2Orgs/channel";
+    }
+
+    public String getCryptoConfiglPath() {
+        return System.getProperty("user.home") + "/" + CRYPTO_CONFIG_DIR;
     }
 
     public String getHomeDirPath() {

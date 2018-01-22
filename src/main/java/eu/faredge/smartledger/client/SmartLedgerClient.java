@@ -226,7 +226,7 @@ public class SmartLedgerClient implements ISmartLedgerClient {
         } catch (JsonProcessingException e) {
             Util.fail("Error in json conversion! " + e.getMessage());
         }
-        String[] args = {"", dsm.getId(), dsm.getMacAddress(), dsm.getDataSourceDefinitionID(), json};
+        String[] args = {dsm.getId(), dsm.getMacAddress(), dsm.getDataSourceDefinitionID(), json};
         BlockEvent.TransactionEvent event = null;
         try {
             SmartLedgerClientHelper.invokeChaincode(channel,
@@ -254,7 +254,7 @@ public class SmartLedgerClient implements ISmartLedgerClient {
         } catch (JsonProcessingException e) {
             Util.fail("Error in json conversion! " + e.getMessage());
         }
-        String[] args = {"", dcm.getId(), dcm.getMacAddress(), dcm.getDataSourceDefinitionsIDs().stream().collect
+        String[] args = {dcm.getId(), dcm.getMacAddress(), dcm.getDataSourceDefinitionsIDs().stream().collect
                 (Collectors.joining(";"))};
         BlockEvent.TransactionEvent event = null;
         try {
@@ -351,12 +351,47 @@ public class SmartLedgerClient implements ISmartLedgerClient {
 
     @Override
     public String registerDCD(DCD dcd) throws SmartLedgerClientException {
-        return null;
+        validator.validateBean(dcd); //TODO
+        String json = null;
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            json = mapper.writeValueAsString(dcd);
+        } catch (JsonProcessingException e) {
+            Util.fail("Error in json conversion! " + e.getMessage());
+        }
+        String[] args = {dcd.getExpirationDateTime().toString(), dcd.getValidFrom().toString(), dcd
+                .getDataSourceManifestID(), dcd.getDataConsumerManifestID(), dcd.getId()};
+        BlockEvent.TransactionEvent event = null;
+        try {
+            SmartLedgerClientHelper.invokeChaincode(channel,
+                    "iEditDCD", args)
+                    .get(TIMEOUT, TimeUnit.SECONDS);
+        } catch (TimeoutException | InterruptedException | ExecutionException | ConcurrentException e) {
+            Util.out(e.getMessage());
+        } catch (Exception e) {
+            Util.out(e.getMessage());
+            throw new SmartLedgerClientException(e);
+        }
+        return dcd.getId();
     }
 
     @Override
     public void removeDCD(String id) throws SmartLedgerClientException {
-
+        if (StringUtils.isEmpty(id))
+            throw new IllegalArgumentException("Error in method removeDCD " +
+                    "id " +
+                    "cannot be empty");
+        String[] args = {id};
+        BlockEvent.TransactionEvent event = null;
+        try {
+            SmartLedgerClientHelper.invokeChaincode(channel,
+                    "iRemoveDCD", args).get(TIMEOUT, TimeUnit.SECONDS);
+        } catch (TimeoutException | InterruptedException | ExecutionException | ConcurrentException e) {
+            Util.out(e.getMessage());
+        } catch (Exception e) {
+            Util.out(e.getMessage());
+            throw new SmartLedgerClientException("Error removing DCD " + e.getMessage());
+        }
     }
 
 

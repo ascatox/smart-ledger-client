@@ -3,17 +3,14 @@
  */
 package eu.faredge.smartledger.client;
 
-import eu.faredge.dm.dsm.DSM;
 import eu.faredge.smartledger.client.base.ISmartLedgerClient;
 import eu.faredge.smartledger.client.exception.SmartLedgerClientException;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import static org.junit.Assert.assertFalse;
 
-public class End2EndTestInstallChaincode {
+public class End2EndTestInstantiateOrUpgradeChaincode {
 
     static ISmartLedgerClient client = null;
 
@@ -22,7 +19,7 @@ public class End2EndTestInstallChaincode {
         client = new SmartLedgerClient();
         try {
             SmartLedgerClient smartLedgerClient = (SmartLedgerClient) client;
-            smartLedgerClient.installChaincode(true, false);
+            smartLedgerClient.instantiateOrUpgradeChaincode(false);
         } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);
         }

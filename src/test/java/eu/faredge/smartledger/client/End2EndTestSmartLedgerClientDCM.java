@@ -32,7 +32,7 @@ public class End2EndTestSmartLedgerClientDCM {
 
 
     @Test
-    public void testGetDataConsumerManifestByUri() {
+    public void testGetDataConsumerManifestById() {
         try {
             String uri = "http://www.eng.it";
             DCM dataConsumerManifestByUri = client.getDataConsumerManifestById(uri);
