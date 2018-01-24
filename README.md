@@ -6,10 +6,10 @@ The [Chaincode](https://github.com/ascatox/smart-ledger-client/blob/master/src/m
 # Setup Hyperledger Fabric
 In order to use the Library, launch Fabric as described in the [official docs](https://hyperledger-fabric.readthedocs.io/en/latest/) in the section [Write your First Application](https://hyperledger-fabric.readthedocs.io/en/release/write_first_app.html).<br/>
 # Install and instantiate the chaincode
-`cp -rf ./smartLedgerClient/src/main/java/fixture/sdkintegration/gocc/smartfactory/src/github.com/smartfactory <YOUR_FABRIC_SAMPLES_DIR>/chaincode`
-`docker exec -it cli bash`
-`peer chaincode install -p github.com/smartfactory -n smartfactory -v 1.0`
-`peer chaincode instantiate -n smartfactory -v 1.0 –c ’{“Args”:[]}’ –C mychannel `
+`cp -rf ./smartLedgerClient/src/main/java/fixture/sdkintegration/gocc/smartfactory/src/github.com/smartfactory <YOUR_FABRIC_SAMPLES_DIR>/chaincode`<br/>
+`docker exec -it cli bash`<br/>
+`peer chaincode install -p github.com/smartfactory -n smartfactory -v 1.0`<br/>
+`peer chaincode instantiate -n smartfactory -v 1.0 –c ’{“Args”:[]}’ –C mychannel `<br/>
 	
 # Configure the LedgerClient
 Edit the file `config-network.properties`with your favourite text editor in order to configure the network as in your HLF previous installation. Under you can find a complete example of configured file: <br/>
