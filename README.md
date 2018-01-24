@@ -1,4 +1,4 @@
-# LedgerClient Library for HyperLedger Fabric 1.0
+# LedgerClient Library for Hyperledger Fabric 1.0
 
 **LedgerClient** is a library to interface with an [Hyperledger Fabric](https://hyperledger-fabric.readthedocs.io/en/latest/) blockchain using the [Hyperledger Fabric SDK Java](https://github.com/hyperledger/fabric-sdk-java).
 
@@ -6,7 +6,7 @@ The [Chaincode](https://github.com/ascatox/smart-ledger-client/blob/master/src/m
 # Setup Hyperledger Fabric
 In order to use the Library, launch Fabric as described in the [official docs](https://hyperledger-fabric.readthedocs.io/en/latest/) in the section [Write your First Application](https://hyperledger-fabric.readthedocs.io/en/release/write_first_app.html).<br/>
 # Install and instantiate the chaincode
-`cp -rf ./smartLedgerClient/src/main/java/fixture/sdkintegration/gocc/smartfactory/src/github.com/smartfactory <YOUR_FABRIC_SAMPLES_DIR>/chaincode`<br/>
+`cp -rf ./smartLedgerClient/src/main/java/fixture/sdkintegration/gocc/smartfactory/src/github.com/smartfactory/ <YOUR_FABRIC_SAMPLES_DIR>/chaincode`<br/>
 `docker exec -it cli bash`<br/>
 `peer chaincode install -p github.com/smartfactory -n smartfactory -v 1.0`<br/>
 `peer chaincode instantiate -n smartfactory -v 1.0 –c ’{“Args”:[]}’ –C mychannel `<br/>
