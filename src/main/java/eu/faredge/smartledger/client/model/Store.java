@@ -16,6 +16,7 @@ package eu.faredge.smartledger.client.model;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.faredge.smartledger.client.model.certificate.CaUser;
+import eu.faredge.smartledger.client.utils.Utils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -38,18 +39,29 @@ import java.util.Properties;
 /**
  * A local file-based key value store.
  */
-public class SampleStore {
+public class Store {
 
     private static final String STORE_PATH = "";
     private String file;
-    private Log logger = LogFactory.getLog(SampleStore.class);
+    private Log logger = LogFactory.getLog(Store.class);
 
-    public SampleStore(File file) {
+    public Store(File file) {
+        if (!file.exists())
+            try {
+                if (file.createNewFile()) {
+                    Utils.out("Successful created file: " + file.getAbsolutePath() + " !!!");
+                } else {
+                    Utils.out("Failed to create file: " + file.getAbsolutePath() + " !!!");
 
+                }
+            } catch (IOException e) {
+                Utils.out(e.getMessage());
+            }
         this.file = file.getAbsolutePath();
     }
 
-    public SampleStore() {}
+    public Store() {
+    }
 
     /**
      * Get the value associated with name.
@@ -108,7 +120,7 @@ public class SampleStore {
         }
     }
 
-    private final Map<String, SampleUser> members = new HashMap<>();
+    private final Map<String, User> members = new HashMap<>();
 
     /**
      * Get the user with a given name
@@ -117,18 +129,18 @@ public class SampleStore {
      * @param org
      * @return user
      */
-    public SampleUser getMember(String name, String org) {
+    public User getMember(String name, String org) {
 
-        // Try to get the SampleUser state from the cache
-        SampleUser sampleUser = members.get(SampleUser.toKeyValStoreName(name, org));
-        if (null != sampleUser) {
-            return sampleUser;
+        // Try to get the User state from the cache
+        User user = members.get(User.toKeyValStoreName(name, org));
+        if (null != user) {
+            return user;
         }
 
-        // Create the SampleUser and try to restore it's state from the key value store (if found).
-        sampleUser = new SampleUser(name, org, this);
+        // Create the User and try to restore it's state from the key value store (if found).
+        user = new User(name, org, this);
 
-        return sampleUser;
+        return user;
 
     }
 
@@ -141,12 +153,12 @@ public class SampleStore {
      */
     public boolean hasMember(String name, String org) {
 
-        // Try to get the SampleUser state from the cache
+        // Try to get the User state from the cache
 
-        if (members.containsKey(SampleUser.toKeyValStoreName(name, org))) {
+        if (members.containsKey(User.toKeyValStoreName(name, org))) {
             return true;
         }
-        return SampleUser.isStored(name, org, this);
+        return User.isStored(name, org, this);
     }
 
     /**
@@ -163,29 +175,29 @@ public class SampleStore {
      * @throws NoSuchProviderException
      * @throws InvalidKeySpecException
      */
-    public SampleUser getMember(String name, String org, String mspId, File privateKeyFile,
-                                File certificateFile) throws IOException, NoSuchAlgorithmException,
+    public User getMember(String name, String org, String mspId, File privateKeyFile,
+                          File certificateFile) throws IOException, NoSuchAlgorithmException,
             NoSuchProviderException, InvalidKeySpecException {
         try {
-            // Try to get the SampleUser state from the cache
-            SampleUser sampleUser = members.get(SampleUser.toKeyValStoreName(name, org));
-            if (null != sampleUser) {
-                return sampleUser;
+            // Try to get the User state from the cache
+            User user = members.get(User.toKeyValStoreName(name, org));
+            if (null != user) {
+                return user;
             }
 
-            // Create the SampleUser and try to restore it's state from the key value store (if found).
-            sampleUser = new SampleUser(name, org, this);
-            sampleUser.setMspId(mspId);
+            // Create the User and try to restore it's state from the key value store (if found).
+            user = new User(name, org, this);
+            user.setMspId(mspId);
 
             String certificate = new String(IOUtils.toByteArray(new FileInputStream(certificateFile)), "UTF-8");
 
             PrivateKey privateKey = getPrivateKeyFromBytes(IOUtils.toByteArray(new FileInputStream(privateKeyFile)));
 
-            sampleUser.setEnrollment(new SampleStoreEnrollement(privateKey, certificate));
+            user.setEnrollment(new SampleStoreEnrollement(privateKey, certificate));
 
-            sampleUser.saveState();
+            user.saveState();
 
-            return sampleUser;
+            return user;
         } catch (IOException e) {
             e.printStackTrace();
             throw e;
@@ -205,29 +217,29 @@ public class SampleStore {
         }
     }
 
-    public SampleUser getMember(String name, String org, String storePath) throws IOException, NoSuchAlgorithmException,
+    public User getMember(String name, String org, String storePath) throws IOException, NoSuchAlgorithmException,
             NoSuchProviderException, InvalidKeySpecException {
         try {
-            // Try to get the SampleUser state from the cache
-            SampleUser sampleUser = members.get(SampleUser.toKeyValStoreName(name, org));
-            if (null != sampleUser) {
-                return sampleUser;
+            // Try to get the User state from the cache
+            User user = members.get(User.toKeyValStoreName(name, org));
+            if (null != user) {
+                return user;
             }
 
-            // Create the SampleUser and try to restore it's state from the key value store (if found).
-            sampleUser = new SampleUser();
+            // Create the User and try to restore it's state from the key value store (if found).
+            user = new User();
             String storePathAbsolute = System.getProperty("user.home") + storePath + "/";
             ObjectMapper mapper = new ObjectMapper();
             CaUser caUser = mapper.readValue(new FileInputStream(storePathAbsolute + name), CaUser.class);
-            sampleUser.setMspId(caUser.getMspid());
-            sampleUser.setName(caUser.getName());
+            user.setMspId(caUser.getMspid());
+            user.setName(caUser.getName());
             String certificate = caUser.getEnrollment().getIdentity().getCertificate();
             String privateKeyStr = caUser.getEnrollment().getSigningIdentity() + "-priv";
             PrivateKey privateKey = getPrivateKeyFromBytes(IOUtils.toByteArray(new FileInputStream
                     (storePathAbsolute + privateKeyStr)));
-            sampleUser.setEnrollment(new SampleStoreEnrollement(privateKey, certificate));
-            sampleUser.saveState();
-            return sampleUser;
+            user.setEnrollment(new SampleStoreEnrollement(privateKey, certificate));
+            user.saveState();
+            return user;
         } catch (IOException e) {
             e.printStackTrace();
             throw e;

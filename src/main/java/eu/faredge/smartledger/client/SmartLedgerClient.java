@@ -3,17 +3,19 @@ package eu.faredge.smartledger.client;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.faredge.dm.dcd.DCD;
+import eu.faredge.dm.dcm.DCM;
+import eu.faredge.dm.dsm.DSM;
 import eu.faredge.smartledger.client.base.ISmartLedgerClient;
 import eu.faredge.smartledger.client.exception.SmartLedgerClientException;
 import eu.faredge.smartledger.client.helper.SmartLedgerClientHelper;
-import eu.faredge.dm.dcm.DCM;
-import eu.faredge.dm.dsm.DSM;
-import eu.faredge.smartledger.client.model.SampleOrg;
-import eu.faredge.smartledger.client.testutils.TestConfig;
-import eu.faredge.smartledger.client.util.Util;
-import eu.faredge.smartledger.client.util.Validator;
+import eu.faredge.smartledger.client.model.Org;
+import eu.faredge.smartledger.client.utils.Config;
+import eu.faredge.smartledger.client.utils.Utils;
+import eu.faredge.smartledger.client.utils.Validator;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.concurrent.ConcurrentException;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.hyperledger.fabric.sdk.BlockEvent;
 import org.hyperledger.fabric.sdk.Channel;
 
@@ -27,19 +29,38 @@ import java.util.stream.Collectors;
 
 public class SmartLedgerClient implements ISmartLedgerClient {
 
-    public static final int TIMEOUT = TestConfig.TIMEOUT;
+
+    private static final Log logger = LogFactory.getLog(SmartLedgerClient.class);
+    public static final int TIMEOUT = Config.TIMEOUT;
+    /**
+     * Mappings of Strings used inside the chaincode to execute the functions.
+     */
+    private static final String Q_GET_DSM_BY_MAC_ADD = "qGetDSMByMacAdd";
+    private static final String Q_GET_ALL_DS_MS = "qGetAllDSMs";
+    private static final String Q_GET_ALL_DSMS_BY_DSDS = "qGetAllDSMSByDsds";
+    private static final String Q_GET_ALL_DC_MS = "qGetAllDCMs";
+    private static final String I_EDIT_DCM = "iEditDCM";
+    private static final String I_REMOVE_DSM = "iRemoveDSM";
+    private static final String I_REMOVE_DCM = "iRemoveDCM";
+    private static final String I_EDIT_DCD = "iEditDCD";
+    private static final String I_REMOVE_DCD = "iRemoveDCD";
+    private static final String Q_GET_DSM_BY_ID = "qGetDSMById";
+    private static final String Q_GET_DCM_BY_MAC_ADD = "qGetDCMByMacAdd";
+    private static final String Q_GET_DCM_BY_ID = "qGetDCMById";
+    private static final String I_EDIT_DSM = "iEditDSM";
+
     private SmartLedgerClientHelper helper;
     private Channel channel;
-    private Validator validator; //TODO
-    private static List<SampleOrg> sampleOrgs;
-    private static final TestConfig testConfig = TestConfig.getConfig();
+    private Validator validator;
+    private static List<Org> orgs;
+    private static final Config CONFIG = Config.getConfig();
 
     public SmartLedgerClient() {
-        doSmartLedgerClient(SmartLedgerClientHelper.CHANNEL_NAME, null, null);
+        doSmartLedgerClient(Config.channelName, null, null);
     }
 
     public SmartLedgerClient(String username) {
-        doSmartLedgerClient(SmartLedgerClientHelper.CHANNEL_NAME, username, null);
+        doSmartLedgerClient(Config.channelName, username, null);
     }
 
     public SmartLedgerClient(String channelName, String username) {
@@ -52,17 +73,17 @@ public class SmartLedgerClient implements ISmartLedgerClient {
 
     private void doSmartLedgerClient(String channelName, String username, String enrollmentSecret) {
         try {
-            validator = new Validator(); //TODO
-            sampleOrgs = new ArrayList<>();
+            validator = new Validator();
+            orgs = new ArrayList<>();
             helper = new SmartLedgerClientHelper();
-            sampleOrgs.addAll(testConfig.getIntegrationTestsSampleOrgs());
-            for (SampleOrg sampleOrg : sampleOrgs) {
-                helper.checkConfig(sampleOrg);
-                helper.setup(sampleOrg, username, enrollmentSecret);
-                channel = helper.initializeChannel(channelName, sampleOrg);
+            orgs.addAll(CONFIG.getIntegrationTestsSampleOrgs());
+            for (Org org : orgs) {
+                helper.checkConfig(org);
+                helper.setup(org, username, enrollmentSecret);
+                channel = helper.initializeChannel(channelName, org);
             }
         } catch (Exception e) {
-            Util.fail(e.getMessage());
+            Utils.fail(e.getMessage());
         }
     }
 
@@ -75,8 +96,8 @@ public class SmartLedgerClient implements ISmartLedgerClient {
      */
     //@Override
     public void installChaincode(boolean instantiate, boolean upgrade) throws SmartLedgerClientException {
-        SmartLedgerClientHelper.installChaincode(channel, sampleOrgs.get(0)); //TODO Only the first
-        Util.out("Chaincode installed correctly!!!");
+        SmartLedgerClientHelper.installChaincode(channel, orgs.get(0)); //TODO Only the first
+        Utils.out("Chaincode installed correctly!!!");
         if (instantiate) {
             instantiateOrUpgradeChaincode(upgrade);
         }
@@ -98,9 +119,9 @@ public class SmartLedgerClient implements ISmartLedgerClient {
             BlockEvent.TransactionEvent event = null;
             transactionEventCompletableFuture.get(TIMEOUT, TimeUnit.SECONDS);
         } catch (TimeoutException | InterruptedException | ExecutionException e) {
-            Util.out(e.getMessage());
+            Utils.out(e.getMessage());
         } catch (Exception e) {
-            Util.out(e.getMessage());
+            Utils.out(e.getMessage());
             throw new SmartLedgerClientException(e);
         }
     }
@@ -116,10 +137,13 @@ public class SmartLedgerClient implements ISmartLedgerClient {
                 "id " +
                 "cannot be empty");
         String[] args = {id};
-        final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, "qGetDSMByUri", args);
-        List<DSM> dsms = Util.extractDSMFromPayloads(payloads);
-        if (dsms.isEmpty())
-            Util.fail("No DSM retrieved from getDataSourceManifestByUri with URI: '" + id + "'");
+        final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, Q_GET_DSM_BY_ID, args);
+        List<DSM> dsms = Utils.extractDSMFromPayloads(payloads);
+
+        if (dsms.isEmpty()) {
+            logger.warn("No DSM retrieved from getDataSourceManifestByUri with URI: '" + id + "'");
+            return new DSM();
+        }
         return dsms.get(0);
     }
 
@@ -135,10 +159,12 @@ public class SmartLedgerClient implements ISmartLedgerClient {
                     "macAddress " +
                     "cannot be empty");
         String[] args = {macAddress};
-        final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, "qGetDSMByMacAdd", args);
-        List<DSM> dsms = Util.extractDSMFromPayloads(payloads);
-        if (dsms.isEmpty())
-            Util.fail("No DSM retrieved from getDataSourceManifestByUri with MAC Address: '" + macAddress + "'");
+        final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, Q_GET_DSM_BY_MAC_ADD, args);
+        List<DSM> dsms = Utils.extractDSMFromPayloads(payloads);
+        if (dsms.isEmpty()) {
+            logger.warn("No DSM retrieved from getDataSourceManifestByUri with MAC Address: '" + macAddress + "'");
+            return new DSM();
+        }
         return dsms.get(0);
     }
 
@@ -154,11 +180,15 @@ public class SmartLedgerClient implements ISmartLedgerClient {
                     "macAddress " +
                     "cannot be empty");
         String[] args = {macAddress};
-        final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, "qGetDCMByMacAdd", args);
-        List<DCM> dcms = Util.extractDCMFromPayloads(payloads);
-        if (dcms.isEmpty())
-            Util.fail("No DSM retrieved from getDataSourceManifestByUri with MAC Address: '" + macAddress + "'");
+        final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, Q_GET_DCM_BY_MAC_ADD, args);
+        List<DCM> dcms = Utils.extractDCMFromPayloads(payloads);
+
+        if (dcms.isEmpty()) {
+            logger.warn("No DSM retrieved from getDataSourceManifestByUri with MAC Address: '" + macAddress + "'");
+            return new DCM();
+        }
         return dcms.get(0);
+
     }
 
     /**
@@ -172,10 +202,12 @@ public class SmartLedgerClient implements ISmartLedgerClient {
                     "id " +
                     "cannot be empty");
         String[] args = {id};
-        final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, "qGetDCMByUri", args);
-        List<DCM> dcms = Util.extractDCMFromPayloads(payloads);
-        if (dcms.isEmpty())
-            Util.fail("No DCM retrieved from getDataConsumerManifestByUri with URI: '" + id + "'");
+        final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, Q_GET_DCM_BY_ID, args);
+        List<DCM> dcms = Utils.extractDCMFromPayloads(payloads);
+        if (dcms.isEmpty()) {
+            logger.warn("No DCM retrieved from getDataConsumerManifestByUri with URI: '" + id + "'");
+            return new DCM();
+        }
         return dcms.get(0);
     }
 
@@ -186,8 +218,8 @@ public class SmartLedgerClient implements ISmartLedgerClient {
     @Override
     public List<DSM> getAllDataSourceManifests() throws SmartLedgerClientException {
         String[] args = {};
-        final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, "qGetAllDSMs", args);
-        return Util.extractDSMFromPayloads(payloads);
+        final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, Q_GET_ALL_DS_MS, args);
+        return Utils.extractDSMFromPayloads(payloads);
     }
 
     @Override
@@ -196,10 +228,10 @@ public class SmartLedgerClient implements ISmartLedgerClient {
             throw new IllegalArgumentException("Error in method getAllDataSourceManifestsByDCM " +
                     "list of dsds  " +
                     "cannot be empty or null");
-        final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, "qGetAllDSMSByDsds", dcm
+        final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, Q_GET_ALL_DSMS_BY_DSDS, dcm
                 .getDataSourceDefinitionsIDs()
                 .toArray(new String[dcm.getDataSourceDefinitionsIDs().size()]));
-        return Util.extractDSMFromPayloads(payloads);
+        return Utils.extractDSMFromPayloads(payloads);
     }
 
     /**
@@ -209,8 +241,8 @@ public class SmartLedgerClient implements ISmartLedgerClient {
     @Override
     public List<DCM> getAllDataConsumerManifests() throws SmartLedgerClientException {
         String[] args = {};
-        final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, "qGetAllDCMs", args);
-        return Util.extractDCMFromPayloads(payloads);
+        final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, Q_GET_ALL_DC_MS, args);
+        return Utils.extractDCMFromPayloads(payloads);
     }
 
     /**
@@ -218,23 +250,24 @@ public class SmartLedgerClient implements ISmartLedgerClient {
      */
     @Override
     public String registerDSM(DSM dsm) throws SmartLedgerClientException {
-        validator.validateBean(dsm); //TODO
+        validator.validateBean(dsm);
         ObjectMapper mapper = new ObjectMapper();
         String json = null;
         try {
             json = mapper.writeValueAsString(dsm.getDataSourceDefinitionParameters());
         } catch (JsonProcessingException e) {
-            Util.fail("Error in json conversion! " + e.getMessage());
+            Utils.fail("Error in json conversion! " + e.getMessage());
         }
         String[] args = {dsm.getId(), dsm.getMacAddress(), dsm.getDataSourceDefinitionID(), json};
         BlockEvent.TransactionEvent event = null;
         try {
             SmartLedgerClientHelper.invokeChaincode(channel,
-                    "iEditDSM", args).get(TIMEOUT, TimeUnit.SECONDS);
+                    I_EDIT_DSM, args).get(TIMEOUT, TimeUnit.SECONDS);
         } catch (TimeoutException | InterruptedException | ExecutionException | ConcurrentException e) {
-            Util.out(e.getMessage());
+            Utils.out(e.getMessage());
         } catch (Exception e) {
-            Util.out(e.getMessage());
+
+            Utils.out(e.getMessage());
             throw new SmartLedgerClientException(e);
         }
         return dsm.getId();
@@ -246,25 +279,25 @@ public class SmartLedgerClient implements ISmartLedgerClient {
      */
     @Override
     public String registerDCM(DCM dcm) throws SmartLedgerClientException {
-        validator.validateBean(dcm); //TODO
+        validator.validateBean(dcm);
         String json = null;
         ObjectMapper mapper = new ObjectMapper();
         try {
             json = mapper.writeValueAsString(dcm);
         } catch (JsonProcessingException e) {
-            Util.fail("Error in json conversion! " + e.getMessage());
+            Utils.fail("Error in json conversion! " + e.getMessage());
         }
         String[] args = {dcm.getId(), dcm.getMacAddress(), dcm.getDataSourceDefinitionsIDs().stream().collect
-                (Collectors.joining(";"))};
+                (Collectors.joining(Config.CSV_DELIMITER_GOLANG))};
         BlockEvent.TransactionEvent event = null;
         try {
             SmartLedgerClientHelper.invokeChaincode(channel,
-                    "iEditDCM", args)
+                    I_EDIT_DCM, args)
                     .get(TIMEOUT, TimeUnit.SECONDS);
         } catch (TimeoutException | InterruptedException | ExecutionException | ConcurrentException e) {
-            Util.out(e.getMessage());
+            Utils.out(e.getMessage());
         } catch (Exception e) {
-            Util.out(e.getMessage());
+            Utils.out(e.getMessage());
             throw new SmartLedgerClientException(e);
         }
         return dcm.getId();
@@ -272,15 +305,15 @@ public class SmartLedgerClient implements ISmartLedgerClient {
 
     @Override
     public void editRegisteredDSM(DSM dsm) throws SmartLedgerClientException {
-        validator.validateBean(dsm); //TODO
-        DSM dataSourceManifestByUri = null;
+        validator.validateBean(dsm);
+        DSM dataSourceManifestByID = null;
         try {
-            dataSourceManifestByUri = getDataSourceManifestById(dsm.getId());
+            dataSourceManifestByID = getDataSourceManifestById(dsm.getId());
         } catch (Exception e) {
             throw new SmartLedgerClientException(e);
         }
-        if (StringUtils.isEmpty(dataSourceManifestByUri.getId())) {
-            Util.out("DSM not registered");
+        if (StringUtils.isEmpty(dataSourceManifestByID.getId())) {
+            Utils.out("DSM not registered");
             throw new SmartLedgerClientException("DSM not registered");
         }
         registerDSM(dsm);
@@ -288,15 +321,15 @@ public class SmartLedgerClient implements ISmartLedgerClient {
 
     @Override
     public void editRegisteredDCM(DCM dcm) throws SmartLedgerClientException {
-        validator.validateBean(dcm); //TODO
-        DSM dataSourceManifestByUri = null;
+        validator.validateBean(dcm);
+        DCM dataConsumerManifestByID = null;
         try {
-            dataSourceManifestByUri = getDataSourceManifestById(dcm.getId());
+            dataConsumerManifestByID = getDataConsumerManifestById(dcm.getId());
         } catch (Exception e) {
             throw new SmartLedgerClientException(e);
         }
-        if (StringUtils.isEmpty(dataSourceManifestByUri.getId())) {
-            Util.out("DCM not registered");
+        if (StringUtils.isEmpty(dataConsumerManifestByID.getId())) {
+            Utils.out("DCM not registered");
             throw new SmartLedgerClientException("DCM not registered");
         }
         registerDCM(dcm);
@@ -317,11 +350,11 @@ public class SmartLedgerClient implements ISmartLedgerClient {
         BlockEvent.TransactionEvent event = null;
         try {
             SmartLedgerClientHelper.invokeChaincode(channel,
-                    "iRemoveDSM", args).get(TIMEOUT, TimeUnit.SECONDS);
+                    I_REMOVE_DSM, args).get(TIMEOUT, TimeUnit.SECONDS);
         } catch (TimeoutException | InterruptedException | ExecutionException | ConcurrentException e) {
-            Util.out(e.getMessage());
+            Utils.out(e.getMessage());
         } catch (Exception e) {
-            Util.out(e.getMessage());
+            Utils.out(e.getMessage());
             throw new SmartLedgerClientException("Error removing DSM: " + e.getMessage());
         }
     }
@@ -340,36 +373,29 @@ public class SmartLedgerClient implements ISmartLedgerClient {
         BlockEvent.TransactionEvent event = null;
         try {
             SmartLedgerClientHelper.invokeChaincode(channel,
-                    "iRemoveDCM", args).get(TIMEOUT, TimeUnit.SECONDS);
+                    I_REMOVE_DCM, args).get(TIMEOUT, TimeUnit.SECONDS);
         } catch (TimeoutException | InterruptedException | ExecutionException | ConcurrentException e) {
-            Util.out(e.getMessage());
+            Utils.out(e.getMessage());
         } catch (Exception e) {
-            Util.out(e.getMessage());
+            Utils.out(e.getMessage());
             throw new SmartLedgerClientException("Error removing DCM " + e.getMessage());
         }
     }
 
     @Override
     public String registerDCD(DCD dcd) throws SmartLedgerClientException {
-        validator.validateBean(dcd); //TODO
-        String json = null;
-        ObjectMapper mapper = new ObjectMapper();
-        try {
-            json = mapper.writeValueAsString(dcd);
-        } catch (JsonProcessingException e) {
-            Util.fail("Error in json conversion! " + e.getMessage());
-        }
+        validator.validateBean(dcd);
         String[] args = {dcd.getExpirationDateTime().toString(), dcd.getValidFrom().toString(), dcd
                 .getDataSourceManifestID(), dcd.getDataConsumerManifestID(), dcd.getId()};
         BlockEvent.TransactionEvent event = null;
         try {
             SmartLedgerClientHelper.invokeChaincode(channel,
-                    "iEditDCD", args)
+                    I_EDIT_DCD, args)
                     .get(TIMEOUT, TimeUnit.SECONDS);
         } catch (TimeoutException | InterruptedException | ExecutionException | ConcurrentException e) {
-            Util.out(e.getMessage());
+            Utils.out(e.getMessage());
         } catch (Exception e) {
-            Util.out(e.getMessage());
+            Utils.out(e.getMessage());
             throw new SmartLedgerClientException(e);
         }
         return dcd.getId();
@@ -385,14 +411,29 @@ public class SmartLedgerClient implements ISmartLedgerClient {
         BlockEvent.TransactionEvent event = null;
         try {
             SmartLedgerClientHelper.invokeChaincode(channel,
-                    "iRemoveDCD", args).get(TIMEOUT, TimeUnit.SECONDS);
+                    I_REMOVE_DCD, args).get(TIMEOUT, TimeUnit.SECONDS);
         } catch (TimeoutException | InterruptedException | ExecutionException | ConcurrentException e) {
-            Util.out(e.getMessage());
+            Utils.out(e.getMessage());
         } catch (Exception e) {
-            Util.out(e.getMessage());
+            Utils.out(e.getMessage());
             throw new SmartLedgerClientException("Error removing DCD " + e.getMessage());
         }
     }
 
-
+    @Override
+    public DCD getDataChannelDescriptorById(String id) throws SmartLedgerClientException {
+       /* if (StringUtils.isEmpty(id))
+            throw new IllegalArgumentException("Error in method getDataChannelDescriptorById " +
+                    "id " +
+                    "cannot be empty");
+        String[] args = {id};
+        final List<String[]> payloads = SmartLedgerClientHelper.queryChainCode(channel, Q_GET_DCM_BY_ID, args);
+        List<DCM> dcms = Utils.extractDCMFromPayloads(payloads);
+        if (dcms.isEmpty()) {
+            logger.warn("No DCM retrieved from getDataConsumerManifestByUri with URI: '" + id + "'");
+            return new DCM();
+        }
+        return dcms.get(0);*/
+       return  null;
+    }
 }//end Class

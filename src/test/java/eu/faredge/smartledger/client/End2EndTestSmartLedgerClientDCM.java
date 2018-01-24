@@ -3,22 +3,31 @@
  */
 package eu.faredge.smartledger.client;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.faredge.dm.dcm.DCM;
+import eu.faredge.dm.dsm.DSM;
 import eu.faredge.smartledger.client.base.ISmartLedgerClient;
 import eu.faredge.smartledger.client.exception.SmartLedgerClientException;
+import eu.faredge.smartledger.client.utils.Utils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
-import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.*;
 
 public class End2EndTestSmartLedgerClientDCM {
 
     static ISmartLedgerClient client = null;
+    private static List<DSM> dsmsToRemove = new ArrayList<>();
+    private static final Log logger = LogFactory.getLog(End2EndTestSmartLedgerClientDCM.class);
 
     @BeforeClass
     public static void begin() {
@@ -33,26 +42,34 @@ public class End2EndTestSmartLedgerClientDCM {
 
     @Test
     public void testGetDataConsumerManifestById() {
+        DCM dcm = null;
         try {
-            String uri = "http://www.eng.it";
-            DCM dataConsumerManifestByUri = client.getDataConsumerManifestById(uri);
-            assertNotNull(dataConsumerManifestByUri);
-            assertFalse(StringUtils.isEmpty(dataConsumerManifestByUri.getId()));
+            dcm = doRegisterDCM();
+            DCM dataConsumerManifestById = client.getDataConsumerManifestById(dcm.getId());
+            assertNotNull(dataConsumerManifestById);
+            assertFalse(StringUtils.isEmpty(dataConsumerManifestById.getId()));
         } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);
+        } catch (Exception e) {
+            assertFalse(e.getMessage(), true);
+        } finally {
+            doRemoveDCM(dcm);
         }
     }
 
 
     @Test
     public void testGetDataConsumerManifestByMacAddress() {
+        DCM dcm = null;
         try {
-            String mac = "321:654:987";
-            DCM dataConsumerManifestByMacAddress = client.getDataConsumerManifestByMacAddress(mac);
+            dcm = doRegisterDCM();
+            DCM dataConsumerManifestByMacAddress = client.getDataConsumerManifestByMacAddress(dcm.getMacAddress());
             assertNotNull(dataConsumerManifestByMacAddress);
             assertFalse(StringUtils.isEmpty(dataConsumerManifestByMacAddress.getId()));
         } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);
+        } finally {
+            doRemoveDCM(dcm);
         }
     }
 
@@ -69,16 +86,17 @@ public class End2EndTestSmartLedgerClientDCM {
 
     @Test
     public void testRegisterDCM() {
+        DCM dcm = null;
         try {
-            DCM dcm = new DCM();
-            dcm.setId("http://www.overit.it");
-            dcm.setMacAddress("b8:e8:56:41:43:05");
-            client.registerDCM(dcm);
-            List<DCM> all = client.getAllDataConsumerManifests();
-            assertNotNull(all);
-            assertFalse(all.isEmpty());
+            dcm = doRegisterDCM();
+            DCM dataConsumerManifestById = client.getDataConsumerManifestById(dcm.getId());
+            assertNotNull(dataConsumerManifestById);
+            assertFalse(dataConsumerManifestById.getId().isEmpty());
+            assertFalse(dataConsumerManifestById.getDataSourceDefinitionsIDs().isEmpty());
         } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);
+        } finally {
+            doRemoveDCM(dcm);
         }
     }
 
@@ -86,39 +104,107 @@ public class End2EndTestSmartLedgerClientDCM {
     @Test
     public void testRemoveDCM() {
         try {
-            DCM dcm = new DCM();
-            dcm.setId("http://www.overit.it");
-            dcm.setMacAddress("b8:e8:56:41:43:05");
-            client.registerDCM(dcm);
-            client.removeDCM(dcm.getId());
-            DCM back = null;
+            DCM dcm = doRegisterDCM();
+            doRemoveDCM(dcm);
+            DCM dcmBack = null;
             try {
-                back = client.getDataConsumerManifestById(dcm.getId());
+                dcmBack = client.getDataConsumerManifestById(dcm.getId());
             } catch (SmartLedgerClientException e) {
-                e.printStackTrace();
+                assertFalse(e.getMessage(), true);
             } catch (Exception e) {
-                e.printStackTrace();
+                assertFalse(e.getMessage(), true); e.printStackTrace();
             }
-            assertNull(back);
+            assertTrue(null == dcmBack.getId() || dcmBack.getId().isEmpty());
         } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);
         }
     }
 
+
     @Test
     public void testEditRegisteredDCMWhenIsPresent() {
+        DCM dcmBack = null;
+        DCM dcmBack2 = null;
         try {
-            DCM dcm = new DCM();
-            dcm.setId("http://www.opcua.com");
-            dcm.setMacAddress("b8:e8:56:41:43:08");
-            client.registerDCM(dcm);
-            DCM back = client.getDataConsumerManifestById(dcm.getId());
-            assertEquals(dcm, back);
+            DCM dcm = doRegisterDCM();
+            dcmBack = client.getDataConsumerManifestById(dcm.getId());
+            assertTrue(Utils.areEquals(dcm, dcmBack));
+            Random random = new Random();
+            dcm.setMacAddress("b8:e8:56:41:43:06:" + Math.abs(random.nextInt(100)));
             client.editRegisteredDCM(dcm);
-            DCM back2 = client.getDataConsumerManifestById(dcm.getId());
-            assertNotEquals(back2, not(dcm));
+            dcmBack2 = client.getDataConsumerManifestById(dcm.getId());
+            assertTrue(!Utils.areEquals(dcmBack2, dcmBack));
         } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);
+        } catch (JsonProcessingException e) {
+            assertFalse(e.getMessage(), true);
+        } finally {
+            doRemoveDCM(dcmBack);
+            doRemoveDCM(dcmBack2);
+        }
+    }
+
+    //@Test
+    public void testGetCompatibleDSM() {
+        try {
+            DCM dcm = init();
+            List<DSM> allDSMs = client.getCompatibleDSM(dcm);
+            assertNotNull(allDSMs);
+            assertFalse(allDSMs.isEmpty());
+        } catch (SmartLedgerClientException e) {
+            assertFalse(e.getMessage(), true);
+        }
+    }
+
+
+    public static DCM init() throws SmartLedgerClientException {
+        Random random = new Random();
+        DCM dcm = new DCM();
+        dcm.setId("device://station_" + Math.abs(random.nextInt(1000)));
+        dcm.setMacAddress("f8:d8:53:21:32:09:" + Math.abs(random.nextInt(100)));
+        DSM dsm = doRegisterDSM();
+        dcm.getDataSourceDefinitionsIDs().add(dsm.getDataSourceDefinitionID());
+        dsmsToRemove.add(dsm);
+        return dcm;
+    }
+
+    public static DCM doRegisterDCM() throws SmartLedgerClientException {
+        DCM dcm = init();
+        client.registerDCM(dcm);
+        return dcm;
+    }
+
+    private void doRemoveDCM(DCM dcm) {
+        try {
+            client.removeDCM(dcm.getId());
+        } catch (SmartLedgerClientException e) {
+            logger.error(e);
+        }
+    }
+
+    public static DSM doRegisterDSM() throws SmartLedgerClientException {
+        DSM dsm = End2EndTestSmartLedgerClientDSM.init();
+        client.registerDSM(dsm);
+        return dsm;
+    }
+
+    public static void doRemoveDSM(DSM dsm) {
+        try {
+            client.removeDSM(dsm.getId());
+        } catch (SmartLedgerClientException e) {
+            logger.error(e);
+        }
+    }
+
+    @After
+    public void tearDown() {
+        try {
+            for (DSM dsm : dsmsToRemove) {
+                doRemoveDSM(dsm);
+            }
+        } catch (Exception e) {
+            logger.warn("Final DSM Cleaning...\n");
+            logger.warn(e);
         }
     }
 

@@ -45,8 +45,8 @@ public interface ISmartLedgerClient {
     String registerDCM(DCM dcm) throws SmartLedgerClientException;
 
     /**
-     * This method gives us a DSM object if present in the ledger, it uses the URI, a unique key of DSM
-     * It gives us a null object if the object is not present
+     * This method gives us a DSM object if present in the ledger, it uses the ID, a unique key of DSM
+     * It gives us an empty object if the object is not present
      *
      * @param id
      * @return
@@ -57,7 +57,7 @@ public interface ISmartLedgerClient {
 
     /**
      * This method gives us a DSM object if present in the ledger, it uses the MACAddress, a unique key of DSM
-     * It gives us a null object if the object is not present
+     * It gives us an empty object if the object is not present
      *
      * @param macAddress
      * @return
@@ -67,7 +67,7 @@ public interface ISmartLedgerClient {
 
     /**
      * This method gives us a DCM object if present in the ledger, it uses the MACAddress, a unique key of DCM
-     * It gives us a null object if the object is not present
+     * It gives us an empty object if the object is not present
      *
      * @param macAddress
      * @return
@@ -76,8 +76,8 @@ public interface ISmartLedgerClient {
     DCM getDataConsumerManifestByMacAddress(String macAddress) throws SmartLedgerClientException;
 
     /**
-     * This method gives us a DCM object if present in the ledger, it uses the URI, a unique key of DCM
-     * It gives us a null object if the object is not present
+     * This method gives us a DCM object if present in the ledger, it uses the ID, a unique key of DCM
+     * It gives us an empty object if the object is not present
      *
      * @param id
      * @return
@@ -95,7 +95,7 @@ public interface ISmartLedgerClient {
     List<DSM> getAllDataSourceManifests() throws SmartLedgerClientException;
 
     /**
-     * This is an administration method, needed to **install** a chaincode in all peers defined in TestConfig class
+     * This is an administration method, needed to **install** a chaincode in all peers defined in Config class
      * It's possible to **instantiate** or **upgrade** a chaincode using the boolean flags
      *
      * @param instantiate
@@ -106,7 +106,7 @@ public interface ISmartLedgerClient {
 
     /**
      * This method gives us a List of DSM objects compatible and of interest for the given DCM using definitions
-     * It gives us a null object if the objects are not present
+     * It gives us an empty object if the objects are not present
      *
      * @param dcm
      * @return
@@ -119,7 +119,7 @@ public interface ISmartLedgerClient {
 
     /**
      * This is an administration method, needed to **instantiate** or **upgrade** a chaincode in all peers defined in
-     * TestConfig class
+     * Config class
      *
      * @param isUpgrade
      * @throws SmartLedgerClientException
@@ -167,5 +167,15 @@ public interface ISmartLedgerClient {
      * @throws SmartLedgerClientException
      */
     void removeDCD(String id) throws SmartLedgerClientException;
+
+    /**
+     * his method gives us a DCD object if present in the ledger, it uses the ID, a unique key of DCD
+     * It gives us an empty object if the object is not present
+     *
+     * @param id
+     * @return
+     * @throws SmartLedgerClientException
+     */
+    DCD getDataChannelDescriptorById(String id) throws SmartLedgerClientException;
 
 }

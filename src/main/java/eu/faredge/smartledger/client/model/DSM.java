@@ -2,7 +2,7 @@
 package eu.faredge.smartledger.client.model;
 
 import eu.faredge.smartledger.client.util.Util;
-import eu.faredge.smartledger.client.util.Validator;
+import eu.faredge.smartledger.client.utils.Validator;
 import org.hibernate.validator.constraints.URL;
 
 import javax.validation.constraints.NotEmpty;

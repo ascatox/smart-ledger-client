@@ -18,12 +18,11 @@ import io.netty.util.internal.StringUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.fabric.sdk.Enrollment;
-import org.hyperledger.fabric.sdk.User;
 
 import java.io.*;
 import java.util.Set;
 
-public class SampleUser implements User, Serializable {
+public class User implements org.hyperledger.fabric.sdk.User, Serializable {
     private static final long serialVersionUID = 8077132186383604355L;
 
     private String name;
@@ -34,13 +33,13 @@ public class SampleUser implements User, Serializable {
     private String enrollmentSecret;
     Enrollment enrollment = null; //need access in CaUser env.
 
-    private transient SampleStore keyValStore;
+    private transient Store keyValStore;
     private String keyValStoreName;
 
-    public SampleUser() {
+    public User() {
     }
 
-    SampleUser(String name, String org, SampleStore fs) {
+    User(String name, String org, Store fs) {
         this.name = name;
 
         this.keyValStore = fs;
@@ -56,7 +55,7 @@ public class SampleUser implements User, Serializable {
     }
 
 
-    static boolean isStored(String name, String org, SampleStore fs) {
+    static boolean isStored(String name, String org, Store fs) {
 
         return fs.hasValue(toKeyValStoreName(name, org));
     }
@@ -154,7 +153,7 @@ public class SampleUser implements User, Serializable {
     /**
      * Restore the state of this user from the key value store (if found).  If not found, do nothing.
      */
-    SampleUser restoreState() {
+    User restoreState() {
         String memberStr = keyValStore.getValue(keyValStoreName);
         if (null != memberStr) {
             // The user was found in the key value store, so restore the
@@ -163,7 +162,7 @@ public class SampleUser implements User, Serializable {
             ByteArrayInputStream bis = new ByteArrayInputStream(serialized);
             try {
                 ObjectInputStream ois = new ObjectInputStream(bis);
-                SampleUser state = (SampleUser) ois.readObject();
+                User state = (User) ois.readObject();
                 if (state != null) {
                     this.name = state.name;
                     this.roles = state.roles;

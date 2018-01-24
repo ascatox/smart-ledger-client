@@ -3,16 +3,20 @@
  */
 package eu.faredge.smartledger.client;
 
-import eu.faredge.dm.dcm.DCM;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.faredge.dm.dsm.DSM;
 import eu.faredge.smartledger.client.base.ISmartLedgerClient;
 import eu.faredge.smartledger.client.exception.SmartLedgerClientException;
+import eu.faredge.smartledger.client.utils.Utils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Random;
 
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.*;
@@ -20,6 +24,8 @@ import static org.junit.Assert.*;
 public class End2EndTestSmartLedgerClientDSM {
 
     static ISmartLedgerClient client = null;
+    private static final Log logger = LogFactory.getLog(End2EndTestSmartLedgerClientDSM.class);
+
 
     @BeforeClass
     public static void begin() {
@@ -33,25 +39,33 @@ public class End2EndTestSmartLedgerClientDSM {
 
     @Test
     public void testGetDataSourceManifestById() {
+        DSM dsm = null;
         try {
-            String uri = "http://www.google.com";
-            DSM dataSourceManifestByUri = client.getDataSourceManifestById(uri);
+            dsm = doRegisterDSM();
+            DSM dataSourceManifestByUri = client.getDataSourceManifestById(dsm.getId());
             assertNotNull(dataSourceManifestByUri);
             assertFalse(StringUtils.isEmpty(dataSourceManifestByUri.getId()));
         } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);
+        } catch (Exception e) {
+            assertFalse(e.getMessage(), true);
+        } finally {
+            doRemoveDSM(dsm);
         }
     }
 
     @Test
     public void testGetDataSourceManifestByMacAddress() {
+        DSM dsm = null;
         try {
-            String mac = "123:456:789";
-            DSM dataSourceManifestByMacAddress = client.getDataSourceManifestByMacAddress(mac);
+            dsm = doRegisterDSM();
+            DSM dataSourceManifestByMacAddress = client.getDataSourceManifestByMacAddress(dsm.getMacAddress());
             assertNotNull(dataSourceManifestByMacAddress);
             assertFalse(StringUtils.isEmpty(dataSourceManifestByMacAddress.getId()));
         } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);
+        } finally {
+            doRemoveDSM(dsm);
         }
     }
 
@@ -67,114 +81,77 @@ public class End2EndTestSmartLedgerClientDSM {
         }
     }
 
-    @Test
-    public void testGetGetCompatibleDSM() {
-        try {
-            testRegisterDSM();
-            List<DSM> allDSMs = client.getCompatibleDSM( testRegisterDCM());
-            assertNotNull(allDSMs);
-            assertFalse(allDSMs.isEmpty());
-        } catch (SmartLedgerClientException e) {
-            assertFalse(e.getMessage(), true);
-        }
-    }
 
     @Test
     public void testRegisterDSM() {
+        DSM dsm = null;
         try {
-            DSM dsm = initDSM();
-            client.registerDSM(dsm);
-            List<DSM> allDSMs = client.getAllDataSourceManifests();
-            assertNotNull(allDSMs);
-            assertFalse(allDSMs.isEmpty());
+            dsm = doRegisterDSM();
+            DSM dataSourceManifestById = client.getDataSourceManifestById(dsm.getId());
+            assertNotNull(dataSourceManifestById);
+            assertFalse(dataSourceManifestById.getId().isEmpty());
+            assertFalse(dataSourceManifestById.getDataSourceDefinitionID().isEmpty());
         } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);
+        } finally {
+            doRemoveDSM(dsm);
         }
     }
-
-
-    private DCM testRegisterDCM() {
-        try {
-            DCM dcm = new DCM();
-            dcm.setId("http://www.overit.it");
-            dcm.setMacAddress("b8:e8:56:41:43:05");
-            client.registerDCM(dcm);
-            List<DCM> all = client.getAllDataConsumerManifests();
-            assertNotNull(all);
-            assertFalse(all.isEmpty());
-            return dcm;
-        } catch (SmartLedgerClientException e) {
-            assertFalse(e.getMessage(), true);
-        }
-        return null;
-    }
-
-    @Test
-    public void testRegisterDSMById() {
-        try {
-            DSM dsm = new DSM();
-            dsm.setId("http://www.mht.it");
-            dsm.setMacAddress("b8:e8:56:41:43:05");
-            setDataDefinitionParameters(dsm);
-            client.registerDSM(dsm);
-            DSM dsmBack = client.getDataSourceManifestById(dsm.getId());
-            assertNotNull(dsmBack);
-            assertFalse(StringUtils.isEmpty(dsmBack.getId()));
-        } catch (SmartLedgerClientException e) {
-            assertFalse(e.getMessage(), true);
-        }
-    }
-
 
     @Test
     public void testRemoveDSM() {
         try {
-            DSM dsm = new DSM();
-            dsm.setId("http://www.eng-mo.it");
-            dsm.setMacAddress("b8:e8:56:41:43:07");
-            client.registerDSM(dsm);
-            client.removeDSM(dsm.getId());
+            DSM dsm = doRegisterDSM();
+            doRemoveDSM(dsm);
             DSM dsmBack = null;
             try {
                 dsmBack = client.getDataSourceManifestById(dsm.getId());
             } catch (SmartLedgerClientException e) {
-                e.printStackTrace();
+                assertFalse(e.getMessage(), true);
             } catch (Exception e) {
-                e.printStackTrace();
+                assertFalse(e.getMessage(), true); e.printStackTrace();
             }
-            assertNull(dsmBack);
+            assertTrue(null == dsmBack.getId() || dsmBack.getId().isEmpty());
         } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);
         }
     }
+
 
     @Test
     public void testEditRegisteredDSMWhenIsPresent() {
+        DSM dsmBack = null;
+        DSM dsmBack2 = null;
         try {
-            DSM dsm = new DSM();
-            dsm.setId("http://www.eng-mo.it");
-            dsm.setMacAddress("b8:e8:56:41:43:07");
-            setDataDefinitionParameters(dsm);
-            client.registerDSM(dsm);
-            DSM dsmBack = client.getDataSourceManifestById(dsm.getId());
-            assertEquals(dsm, dsmBack);
+            DSM dsm = doRegisterDSM();
+            dsmBack = client.getDataSourceManifestById(dsm.getId());
+            assertTrue(Utils.areEquals(dsm, dsmBack));
+            Random random = new Random();
+            dsm.setMacAddress("b8:e8:56:41:43:06:" + Math.abs(random.nextInt(100)));
             client.editRegisteredDSM(dsm);
-            DSM dsmBack2 = client.getDataSourceManifestById(dsm.getId());
-            assertNotEquals(dsmBack2, not(dsm));
+            dsmBack2 = client.getDataSourceManifestById(dsm.getId());
+            assertTrue(!Utils.areEquals(dsmBack2, dsmBack));
         } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);
+        } catch (JsonProcessingException e) {
+            assertFalse(e.getMessage(), true);
+        } finally {
+            doRemoveDSM(dsmBack2);
+            doRemoveDSM(dsmBack);
         }
     }
 
-    private DSM initDSM() {
+    public static DSM init() {
+        Random random = new Random();
         DSM dsm = new DSM();
-        dsm.setId("http://www.google.it");
-        dsm.setMacAddress("b8:e8:56:41:43:06");
+        dsm.setDataSourceDefinitionID("manifest:dsd:plant_" + Math.abs(random.nextInt(10)));
+        dsm.setId("device://plant_" + Math.abs(random.nextInt(1000)));
+        dsm.setMacAddress("b8:e8:56:41:43:06:" + Math.abs(random.nextInt(100)));
         setDataDefinitionParameters(dsm);
         return dsm;
     }
 
-    private void setDataDefinitionParameters(DSM dsm) {
+    private static void setDataDefinitionParameters(DSM dsm) {
         DSM.DataSourceDefinitionParameters.Parameters parameters = new DSM.DataSourceDefinitionParameters
                 .Parameters();
         parameters.setKey("connection");
@@ -184,5 +161,17 @@ public class End2EndTestSmartLedgerClientDSM {
         dsm.setDataSourceDefinitionParameters(definitionParameters);
     }
 
+    public static DSM doRegisterDSM() throws SmartLedgerClientException {
+        DSM dsm = init();
+        client.registerDSM(dsm);
+        return dsm;
+    }
 
+    public static void doRemoveDSM(DSM dsm) {
+        try {
+            client.removeDSM(dsm.getId());
+        } catch (SmartLedgerClientException e) {
+           logger.error(e);
+        }
+    }
 }

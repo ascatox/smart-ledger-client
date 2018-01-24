@@ -14,13 +14,19 @@
  *
  */
 
-package eu.faredge.smartledger.client.util;
+package eu.faredge.smartledger.client.utils;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import eu.faredge.dm.dcd.DCD;
 import eu.faredge.dm.dcm.DCM;
 import eu.faredge.dm.dsm.DSM;
-import eu.faredge.smartledger.client.model.RecordDCM;
-import eu.faredge.smartledger.client.model.RecordDSM;
+import eu.faredge.smartledger.client.model.RecordDCDParser;
+import eu.faredge.smartledger.client.model.RecordDCMParser;
+import eu.faredge.smartledger.client.model.RecordDSMParser;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
@@ -28,25 +34,82 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.hyperledger.fabric.sdk.helper.Utils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.hyperledger.fabric.sdk.helper.Config;
 
 import java.io.*;
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Properties;
 
 import static java.lang.String.format;
 
-public class Util {
+public class Utils {
 
     public static final String REGEX_MAC_ADDRESS = "\\b([0-9a-fA-F]{2}:??){5}([0-9a-fA-F]{2})\\b";
+    private static final Log logger = LogFactory.getLog(Utils.class);
+
+
+    private Utils() {
+    }
 
     /**
-     * Private constructor to prevent instantiation.
+     * Sets the value of a field on an object
+     *
+     * @param o         The object that contains the field
+     * @param fieldName The name of the field
+     * @param value     The new value
+     * @return The previous value of the field
      */
-    private Util() {
+    public static Object setField(Object o, String fieldName, Object value) {
+        Object oldVal = null;
+        try {
+            final Field field = o.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            oldVal = field.get(o);
+            field.set(o, value);
+        } catch (Exception e) {
+            throw new RuntimeException("Cannot get value of field " + fieldName, e);
+        }
+        return oldVal;
     }
+
+    /**
+     * Sets a Config property value
+     * <p>
+     * The Config instance is initialized once on startup which means that
+     * its properties don't change throughout its lifetime.
+     * This method allows a Config property to be changed temporarily for testing purposes
+     *
+     * @param key   The key of the property (eg Config.LOGGERLEVEL)
+     * @param value The new value
+     * @return The previous value
+     */
+    public static String setConfigProperty(String key, String value) throws Exception {
+
+        String oldVal = null;
+
+        try {
+            Config config = Config.getConfig();
+
+            final Field sdkPropertiesInstance = config.getClass().getDeclaredField("sdkProperties");
+            sdkPropertiesInstance.setAccessible(true);
+
+            final Properties sdkProperties = (Properties) sdkPropertiesInstance.get(config);
+            oldVal = sdkProperties.getProperty(key);
+            sdkProperties.put(key, value);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to set Config property " + key, e);
+        }
+
+        return oldVal;
+    }
+
 
     /**
      * Generate a targz inputstream from source folder.
@@ -77,7 +140,7 @@ public class Util {
                 String relativePath = childPath.substring((sourcePath.length() + 1), childPath.length());
 
                 if (pathPrefix != null) {
-                    relativePath = Utils.combinePaths(pathPrefix, relativePath);
+                    relativePath = org.hyperledger.fabric.sdk.helper.Utils.combinePaths(pathPrefix, relativePath);
                 }
 
                 relativePath = FilenameUtils.separatorsToUnix(relativePath);
@@ -120,17 +183,18 @@ public class Util {
 
     public static void out(String format, Object... args) {
         if (StringUtils.isEmpty(format) || null == args) return;
-        System.err.flush();
-        System.out.flush();
+        //   System.err.flush();
+        //  System.out.flush();
 
         if (StringUtils.isNotEmpty(format) && null != args)
-            System.out.println(format(format, args));
-        System.err.flush();
-        System.out.flush();
+            logger.info(format(format, args));
+        //System.err.flush();
+        //System.out.flush();
 
     }
 
     public static void fail(String message) {
+        logger.error(message);
         if (message == null) {
             throw new RuntimeException();
         } else {
@@ -185,17 +249,19 @@ public class Util {
         List<DSM> dsms = new ArrayList<>();
         payloads.stream().forEach(val -> {
             String dsmString = val[1];
-            Util.out(dsmString);
+            Utils.out(dsmString);
             if (null != dsmString && !StringUtils.isBlank(dsmString)) {
-                ObjectMapper mapper = new ObjectMapper();
                 try {
-                    RecordDSM[] recordDSMs = mapper.readValue(dsmString, RecordDSM[].class);
-                    for (RecordDSM recordDSM : recordDSMs) {
-                        if (null != recordDSM && null != recordDSM.getRecord())
-                            dsms.add(recordDSM.getRecord());
+                    //RecordDSMParser[] recordDSMs = mapper.readValue(dsmString, RecordDSMParser[].class);
+                    JsonParser parser = new JsonParser();
+                    JsonArray recordDSMs = parser.parse(dsmString).getAsJsonArray();
+                    for (JsonElement recordDSM : recordDSMs) {
+                        if (null != recordDSM) {
+                            dsms.add(RecordDSMParser.parse(recordDSM));
+                        }
                     }
-                } catch (IOException e) {
-                    Util.fail(e.getMessage());
+                } catch (Exception e) {
+                    Utils.fail(e.getMessage());
                 }
             }
         });
@@ -213,21 +279,50 @@ public class Util {
         List<DCM> dcms = new ArrayList<>();
         payloads.stream().forEach(val -> {
             String dcmString = val[1];
-            Util.out(dcmString);
+            Utils.out(dcmString);
             if (null != dcmString && !StringUtils.isBlank(dcmString)) {
-                ObjectMapper mapper = new ObjectMapper();
                 try {
-                    RecordDCM[] recordDCMs = mapper.readValue(dcmString, RecordDCM[].class);
-                    for (RecordDCM recordDCM : recordDCMs) {
-                        if (null != recordDCM && null != recordDCM.getRecord())
-                            dcms.add(recordDCM.getRecord());
+                    JsonParser parser = new JsonParser();
+                    JsonArray recordDCMs = parser.parse(dcmString).getAsJsonArray(); ;
+                    for (JsonElement recordDCM : recordDCMs) {
+                        if (null != recordDCM)
+                            dcms.add(RecordDCMParser.parse(recordDCM));
                     }
-                } catch (IOException e) {
-                    Util.fail(e.getMessage());
+                } catch (Exception e) {
+                    Utils.fail(e.getMessage());
                 }
             }
         });
         return dcms;
+    }
+
+
+    /**
+     * Transform payloads in DCD with Array Structure payload[0] = peer's name payload owner
+     * payload[1] = Data coming from peer
+     *
+     * @param payloads
+     * @return
+     */
+    public static List<DCD> extractDCDFromPayloads(List<String[]> payloads) {
+        List<DCD> dcds = new ArrayList<>();
+        payloads.stream().forEach(val -> {
+            String dcdString = val[1];
+            Utils.out(dcdString);
+            if (null != dcdString && !StringUtils.isBlank(dcdString)) {
+                try {
+                    JsonParser parser = new JsonParser();
+                    JsonArray recordDCDs = parser.parse(dcdString).getAsJsonArray(); ;
+                    for (JsonElement recordDCM : recordDCDs) {
+                        if (null != recordDCM)
+                            dcds.add(RecordDCDParser.parse(recordDCM));
+                    }
+                } catch (Exception e) {
+                    Utils.fail(e.getMessage());
+                }
+            }
+        });
+        return dcds;
     }
 
 
@@ -246,4 +341,30 @@ public class Util {
         if (StringUtils.isEmpty(macAddress)) throw new IllegalArgumentException("macAddress cannot be empty");
         return macAddress.matches(REGEX_MAC_ADDRESS);
     }
+
+
+    public static boolean areEquals(DSM a, DSM b) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        String jsonA = mapper.writeValueAsString(a);
+        String jsonB = mapper.writeValueAsString(b);
+        if (jsonA.equalsIgnoreCase(jsonB)) return true;
+        return false;
+    }
+
+    public static boolean areEquals(DCM a, DCM b) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        String jsonA = mapper.writeValueAsString(a);
+        String jsonB = mapper.writeValueAsString(b);
+        if (jsonA.equalsIgnoreCase(jsonB)) return true;
+        return false;
+    }
+
+    public static boolean areEquals(DCD a, DCD b) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        String jsonA = mapper.writeValueAsString(a);
+        String jsonB = mapper.writeValueAsString(b);
+        if (jsonA.equalsIgnoreCase(jsonB)) return true;
+        return false;
+    }
+
 }

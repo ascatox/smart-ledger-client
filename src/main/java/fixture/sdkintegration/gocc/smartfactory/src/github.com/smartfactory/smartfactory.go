@@ -45,32 +45,28 @@ var logger = shim.NewLogger("smartfactory")
 type Device struct{}
 
 type DSM struct {
-	Id                   string `json:"id"`
-	MACAddress           string `json:"macAddress"`
-	DSD                  string `json:"dsd"`
-	ConnectionParameters string `json:"connectionParameters"`
-	DSMParameters        string `json:"dsmParameters"`
-	Type                 string `json:"type"`
-
+	Id            string `json:"id"`
+	MACAddress    string `json:"macAddress"`
+	DSD           string `json:"dsd"`
+	DSMParameters string `json:"dsmParameters"`
+	Type          string `json:"type"`
 }
 
 type DCM struct {
-	Id               string `json:"id"`
-	MACAddress       string `json:"macAddress"`
-	DSDs             string `json:"dsds"`
-	Type             string `json:"type"`
+	Id         string `json:"id"`
+	MACAddress string `json:"macAddress"`
+	DSDs       string `json:"dsds"`
+	Type       string `json:"type"`
 }
 
 type DCD struct {
-	ExpirationDateTime	string `json:"expirationDateTime"`
-	ValidFrom       	string `json:"validFrom"`
-	DSMId             	string `json:"dsmId"`
-	DCMId				string `json:"dcmId"`
-	Id					string `json:"id"`
-	Type             	string `json:"type"`
+	ExpirationDateTime string `json:"expirationDateTime"`
+	ValidFrom          string `json:"validFrom"`
+	DSMId              string `json:"dsmId"`
+	DCMId              string `json:"dcmId"`
+	Id                 string `json:"id"`
+	Type               string `json:"type"`
 }
-
-
 
 /*
  * The Init method is called when the Smart Contract "fabcar" is instantiated by the blockchain network
@@ -80,12 +76,11 @@ type DCD struct {
 func (d *Device) Init(APIstub shim.ChaincodeStubInterface) sc.Response {
 	DSMs := []DSM{
 		DSM{
-			Id:                  "http://www.google.com",
-			MACAddress:           "123:456:789",
-			DSD:                  "Lorem",
-			ConnectionParameters: "ipsum",			
-			DSMParameters:        "{'key':'value'}",  
-			Type:                 "DSM",
+			Id:            "device://axyzk-dsm",
+			MACAddress:    "123:456:789",
+			DSD:           "Lorem",
+			DSMParameters: "{'key':'value'}",
+			Type:          "DSM",
 		},
 	}
 	j := 0
@@ -98,10 +93,10 @@ func (d *Device) Init(APIstub shim.ChaincodeStubInterface) sc.Response {
 	}
 	DCMs := []DCM{
 		DCM{
-			Id:               "http://www.eng.it",
-			MACAddress:       "321:654:987",
-			DSDs:             "lkjhg",
-			Type:             "DCM",
+			Id:         "device://byutj-dcm",
+			MACAddress: "321:654:987",
+			DSDs:       "Ipsum",
+			Type:       "DCM",
 		},
 	}
 	k := 0
@@ -112,14 +107,14 @@ func (d *Device) Init(APIstub shim.ChaincodeStubInterface) sc.Response {
 		fmt.Println("Added", DCMs[k])
 		k = k + 1
 	}
-DCDs := []DCD{
+	DCDs := []DCD{
 		DCD{
-			ExpirationDateTime:		"2018-01-27",
-			ValidFrom:       		"2017-01-27",
-			DSMId:                  "http://www.google.com",
-			DCMId:					"http://www.eng.it",
-			Id:						"http://www.apple.com",
-			Type:             		"DCD",
+			ExpirationDateTime: "2018-01-27",
+			ValidFrom:          "2017-01-27",
+			DSMId:              "device://axyzk-dsm",
+			DCMId:              "device://byutj-dcm",
+			Id:                 "channel://tytlt-dcd",
+			Type:               "DCD",
 		},
 	}
 	l := 0
@@ -130,7 +125,6 @@ DCDs := []DCD{
 		fmt.Println("Added", DCDs[l])
 		l = l + 1
 	}
-
 
 	return shim.Success(nil)
 }
@@ -154,7 +148,6 @@ func (d *Device) queryDCM(APIstub shim.ChaincodeStubInterface, args []string) sc
 	return shim.Success(dcmAsBytes)
 }
 
-
 func (d *Device) queryDCD(APIstub shim.ChaincodeStubInterface, args []string) sc.Response {
 
 	if len(args) != 1 {
@@ -167,19 +160,18 @@ func (d *Device) queryDCD(APIstub shim.ChaincodeStubInterface, args []string) sc
 func (d *Device) editDSM(APIstub shim.ChaincodeStubInterface, args []string) sc.Response {
 	fmt.Println("Entering inside editDSM")
 
-	if len(args) != 5 {
+	if len(args) != 4 {
 		lenght := strconv.Itoa(len(args))
-		str := "Incorrect number of arguments. Expecting 5!" + "received: " + lenght
+		str := "Incorrect number of arguments. Expecting 4!" + "received: " + lenght
 		return shim.Error(str)
 	}
 
 	dsm := DSM{
-		Id:                   args[0],
-		MACAddress:           args[1],
-		DSD:                  args[2],
-		ConnectionParameters: args[3],
-		DSMParameters:		  args[4],
-		Type:                 "DSM",
+		Id:            args[0],
+		MACAddress:    args[1],
+		DSD:           args[2],
+		DSMParameters: args[3],
+		Type:          "DSM",
 	}
 	// Convert keys to compound ke
 
@@ -198,10 +190,10 @@ func (d *Device) editDCM(APIstub shim.ChaincodeStubInterface, args []string) sc.
 	}
 
 	dcm := DCM{
-		Id:               args[0],
-		MACAddress:       args[1],
-		DSDs:             args[2],
-		Type:             "DCM",
+		Id:         args[0],
+		MACAddress: args[1],
+		DSDs:       args[2],
+		Type:       "DCM",
 	}
 
 	dcmAsBytes, _ := json.Marshal(dcm)
@@ -213,17 +205,17 @@ func (d *Device) editDCM(APIstub shim.ChaincodeStubInterface, args []string) sc.
 
 func (d *Device) editDCD(APIstub shim.ChaincodeStubInterface, args []string) sc.Response {
 
-	if len(args) != 6 {
-		return shim.Error("Incorrect number of arguments. Expecting 6")
+	if len(args) != 5 {
+		return shim.Error("Incorrect number of arguments. Expecting 5")
 	}
 
 	dcd := DCD{
-		ExpirationDateTime:	args[0],
-		ValidFrom:       	args[1],
-		DSMId:             	args[2],
-		DCMId:				args[3],
-		Id:					args[4],
-		Type:             	"DCD",
+		ExpirationDateTime: args[0],
+		ValidFrom:          args[1],
+		DSMId:              args[2],
+		DCMId:              args[3],
+		Id:                 args[4],
+		Type:               "DCD",
 	}
 
 	dcdAsBytes, _ := json.Marshal(dcd)
@@ -255,9 +247,9 @@ func (d *Device) queryAllDSMsByDSDs(APIstub shim.ChaincodeStubInterface, dsds []
 	if (len(dsds)) == 0 {
 		return shim.Error("Incorrect number of arguments. Expecting dsds (array)")
 	}
-	isNotFirstElement := false 
+	isNotFirstElement := false
 	var buffer bytes.Buffer
-	for i:=0;i<len(dsds);i++ {
+	for i := 0; i < len(dsds); i++ {
 
 		queryString :=
 			"{" +
@@ -268,24 +260,23 @@ func (d *Device) queryAllDSMsByDSDs(APIstub shim.ChaincodeStubInterface, dsds []
 				" \"" + dsds[i] +
 				"\"} " +
 				" }"
-	
+
 		queryResponse, error := getQueryResultForQueryString(APIstub, queryString)
 		if error != nil {
 			fmt.Printf("Error querying DSM by DSD: %s", error)
 			return shim.Error("Error querying DSM by dsd " + dsds[i]) //TODO Error
 		}
 
-		if (isNotFirstElement) {            
-			buffer.WriteString(",") 	    
+		if isNotFirstElement {
+			buffer.WriteString(",")
 		}
-		n := bytes.IndexByte(queryResponse, 0)                                    
+		n := bytes.IndexByte(queryResponse, 0)
 		buffer.WriteString(string(queryResponse[:n]))
 		isNotFirstElement = true
 	}
 	return shim.Success(buffer.Bytes())
 	/* return buffer.Bytes(), nil */
 }
-
 
 func (d *Device) querDSMById(APIstub shim.ChaincodeStubInterface, id string) sc.Response {
 	fmt.Println("Entering inside querDSMById")
@@ -332,7 +323,6 @@ func (d *Device) querDSMByMacAdd(APIstub shim.ChaincodeStubInterface, macAdd str
 	}
 	return shim.Success(buffer)
 }
-
 
 func (d *Device) queryAllDCMs(APIstub shim.ChaincodeStubInterface) sc.Response {
 	queryString :=
@@ -406,7 +396,7 @@ func (d *Device) queryAllDCDs(APIstub shim.ChaincodeStubInterface) sc.Response {
 		return shim.Error("Error querying all DCD")
 	}
 	return shim.Success(buffer)
-}	
+}
 
 func (d *Device) querDCDById(APIstub shim.ChaincodeStubInterface, id string) sc.Response {
 	//	logger.Info("Entering in queryDCDById")
@@ -480,7 +470,6 @@ func (d *Device) removeDCM(stub shim.ChaincodeStubInterface, key string) sc.Resp
 	return shim.Success(nil)
 }
 
-
 func (d *Device) removeDCD(stub shim.ChaincodeStubInterface, key string) sc.Response {
 	if (len(strings.TrimSpace(key))) == 0 {
 		return shim.Error("Incorrect number of arguments. Expecting DCD key")
@@ -505,7 +494,6 @@ func (d *Device) removeDCD(stub shim.ChaincodeStubInterface, key string) sc.Resp
 	}
 	return shim.Success(nil)
 }
-
 
 func getQueryResultForQueryString(stub shim.ChaincodeStubInterface, queryString string) ([]byte, error) {
 	fmt.Printf("- getQueryResultForQueryString queryString:\n%s\n", queryString)
@@ -577,7 +565,7 @@ func (d *Device) Invoke(stub shim.ChaincodeStubInterface) sc.Response {
 	case "iRemoveDCM":
 		return d.removeDCM(stub, args[0])
 	// DCD Type
-		// Query DCM
+	// Query DCM
 	case "qGetAllDCDs":
 		return d.queryAllDCDs(stub)
 	case "qGetDCDById":

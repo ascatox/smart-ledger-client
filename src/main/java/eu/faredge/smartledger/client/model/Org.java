@@ -1,7 +1,6 @@
 package eu.faredge.smartledger.client.model;
 
 import org.hyperledger.fabric.sdk.Peer;
-import org.hyperledger.fabric.sdk.User;
 import org.hyperledger.fabric_ca.sdk.HFCAClient;
 
 import java.util.*;
@@ -26,21 +25,21 @@ import java.util.*;
  * Keeps track which resources are defined for the Organization it represents.
  *
  */
-public class SampleOrg {
+public class Org {
     final String name;
     final String mspid;
     HFCAClient caClient;
 
-    Map<String, User> userMap = new HashMap<>();
+    Map<String, org.hyperledger.fabric.sdk.User> userMap = new HashMap<>();
     Map<String, String> peerLocations = new HashMap<>();
     Map<String, String> ordererLocations = new HashMap<>();
     Map<String, String> eventHubLocations = new HashMap<>();
     Set<Peer> peers = new HashSet<>();
-    private SampleUser admin;
+    private User admin;
     private String caLocation;
     private Properties caProperties = null;
 
-    private SampleUser peerAdmin;
+    private User peerAdmin;
 
     private String domainName;
 
@@ -50,16 +49,16 @@ public class SampleOrg {
 
     private String caName;
 
-    public SampleOrg(String name, String mspid) {
+    public Org(String name, String mspid) {
         this.name = name;
         this.mspid = mspid;
     }
 
-    public SampleUser getAdmin() {
+    public User getAdmin() {
         return admin;
     }
 
-    public void setAdmin(SampleUser admin) {
+    public void setAdmin(User admin) {
         this.admin = admin;
     }
 
@@ -135,11 +134,11 @@ public class SampleOrg {
         return name;
     }
 
-    public void addUser(SampleUser user) {
+    public void addUser(User user) {
         userMap.put(user.getName(), user);
     }
 
-    public User getUser(String name) {
+    public org.hyperledger.fabric.sdk.User getUser(String name) {
         return userMap.get(name);
     }
 
@@ -168,11 +167,11 @@ public class SampleOrg {
     }
 
 
-    public SampleUser getPeerAdmin() {
+    public User getPeerAdmin() {
         return peerAdmin;
     }
 
-    public void setPeerAdmin(SampleUser peerAdmin) {
+    public void setPeerAdmin(User peerAdmin) {
         this.peerAdmin = peerAdmin;
     }
 

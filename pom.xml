@@ -109,6 +109,7 @@
                     <excludes>
                         <exclude>**/*Unit*.java</exclude>
                         <exclude>End2EndTestInstallChaincode.java</exclude>
+                        <exclude>End2EndTestInstantiateOrUpgradeChaincode.java</exclude>
                     </excludes>
                     <includes>
                         <include>**/End2End*.java</include>

@@ -1,5 +1,5 @@
 
-package eu.faredge.smartledger.client.util;
+package eu.faredge.smartledger.client.utils;
 
 import eu.faredge.dm.dcd.DCD;
 import eu.faredge.dm.dcm.DCM;
@@ -47,6 +47,8 @@ public class Validator {
             throw new SmartLedgerClientException(DCM_CANNOT_BE_EMPTY_MESSAGE);
         if (null == dcd.getDataSourceManifestID() || StringUtils.isEmpty(dcd.getDataSourceManifestID()))
             throw new SmartLedgerClientException(DSM_CANNOT_BE_EMPTY_MESSAGE);
+
+        //if(dcd.getExpirationDateTime())
 
     }
 

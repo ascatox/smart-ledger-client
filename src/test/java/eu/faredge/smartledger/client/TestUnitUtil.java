@@ -1,6 +1,6 @@
 package eu.faredge.smartledger.client;
 
-import eu.faredge.smartledger.client.util.Util;
+import eu.faredge.smartledger.client.utils.Utils;
 import org.junit.Test;
 
 import static junit.framework.TestCase.fail;
@@ -12,14 +12,14 @@ public class TestUnitUtil {
     @Test
     public void testValidateUriWhenUriIsNotValid() {
         String uri = "pippo";
-        boolean b = Util.validateUri(uri);
+        boolean b = Utils.validateUri(uri);
         assertTrue(!b);
     }
 
     @Test
     public void testValidateUriWhenUriIsValid() {
         String uri = "http://www.google.it";
-        boolean b = Util.validateUri(uri);
+        boolean b = Utils.validateUri(uri);
         assertTrue(b);
 
     }
@@ -27,7 +27,7 @@ public class TestUnitUtil {
     @Test
     public void testValidateUriWhenUriIsEmpty() {
         try {
-            Util.validateUri("");
+            Utils.validateUri("");
             fail();
         } catch (IllegalArgumentException e) {
            assertTrue(e.getMessage(), true);
@@ -37,7 +37,7 @@ public class TestUnitUtil {
     @Test
     public void testValidateMacAddressWhenUriIsNotValid() {
         String macAddress = "ciaomare";
-        boolean b = Util.validateMacAddress(macAddress);
+        boolean b = Utils.validateMacAddress(macAddress);
         assertTrue(!b);
 
     }
@@ -45,14 +45,14 @@ public class TestUnitUtil {
     @Test
     public void testValidateMacAddressWhenUriIsValid() {
         String macAddress = "b8:e8:56:41:43:06";
-        boolean b = Util.validateMacAddress(macAddress);
+        boolean b = Utils.validateMacAddress(macAddress);
         assertTrue(b);
     }
 
     @Test
     public void testValidateMacAddressWhenUriIsEmpty() {
         try {
-            Util.validateMacAddress("");
+            Utils.validateMacAddress("");
             fail();
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage(), true);       

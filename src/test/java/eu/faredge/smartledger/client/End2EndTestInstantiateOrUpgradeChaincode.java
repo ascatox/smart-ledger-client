@@ -19,7 +19,7 @@ public class End2EndTestInstantiateOrUpgradeChaincode {
         client = new SmartLedgerClient();
         try {
             SmartLedgerClient smartLedgerClient = (SmartLedgerClient) client;
-            smartLedgerClient.instantiateOrUpgradeChaincode(false);
+            smartLedgerClient.instantiateOrUpgradeChaincode(true);
         } catch (SmartLedgerClientException e) {
             assertFalse(e.getMessage(), true);
         }
