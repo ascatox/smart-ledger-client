@@ -13,7 +13,7 @@ In order to use the Library, launch Fabric as described in the [official docs](h
 `peer chaincode instantiate -n smartfactory -v 1.0 –c ’{“Args”:[]}’ –C mychannel `<br/>
 	
 # Configure the LedgerClient
-Edit the file `config-network.properties`with your favourite text editor in order to configure the network as in your HLF previous installation. Under you can find a complete example of configured file: <br/>
+Edit the file `config-network.properties`[*](https://github.com/ascatox/smart-ledger-client/blob/master/src/main/resources/config-network.properties) with your favourite text editor in order to configure the network as in your HLF previous installation. Under you can find a complete example of configured file: <br/>
 `vim config-network.properties` 
 
 	numberOrgs=1
