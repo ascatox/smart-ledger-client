@@ -1,6 +1,6 @@
 # LedgerClient Library for Hyperledger Fabric 1.0
 
-**LedgerClient** is a library to interface with an [Hyperledger Fabric](https://hyperledger-fabric.readthedocs.io/en/latest/) blockchain using the [Hyperledger Fabric SDK Java](https://github.com/hyperledger/fabric-sdk-java).
+**LedgerClient** is a Java library to interface with an [Hyperledger Fabric](https://hyperledger-fabric.readthedocs.io/en/latest/) blockchain using the [Hyperledger Fabric SDK Java](https://github.com/hyperledger/fabric-sdk-java).
 
 The [Chaincode](https://github.com/ascatox/smart-ledger-client/blob/master/src/main/java/fixture/sdkintegration/gocc/smartfactory/src/github.com/smartfactory/smartfactory.go) in Go Language, to interact with the Smart Factory Lab, is bundled with the project.
 # Setup HLF
@@ -40,4 +40,5 @@ Copy your HLF `crypto-config` dir under your **HOME** directory <br/>
 The **JavaDoc** documentation of the Library, is present in the `doc` folder of the project.<br/>
 Clone the project or download the [zip file](https://github.com/ascatox/smart-ledger-client/blob/master/doc.zip) and open the `index.html` in the doc folder to explore the documentation, starting from `iSmartLedgerClient`.
 
-Happy Blockchain 😄
+# Usage
+You can find simple [examples](https://github.com/ascatox/smart-ledger-client/blob/master/src/test/java/eu/faredge/smartledger/client/End2EndTestSmartLedgerClientDSM.java) of usage of the library looking at the **End2End tests** in the `test` folder of projects.
