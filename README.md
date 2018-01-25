@@ -41,4 +41,4 @@ The **JavaDoc** documentation of the Library, is present in the `doc` folder of 
 Clone the project or download the [zip file](https://github.com/ascatox/smart-ledger-client/blob/master/doc.zip) and open the `index.html` in the doc folder to explore the documentation, starting from `iSmartLedgerClient`.
 
 # Usage
-You can find simple [examples](https://github.com/ascatox/smart-ledger-client/blob/master/src/test/java/eu/faredge/smartledger/client/End2EndTestSmartLedgerClientDSM.java) of usage of the library looking at the **End2End tests** in the `test` folder of projects.
+You can find simple [examples](https://github.com/ascatox/smart-ledger-client/blob/master/src/test/java/eu/faredge/smartledger/client/End2EndTestSmartLedgerClientDSM.java) of usage looking at the **End2End tests** in the `test` folder of projects.
