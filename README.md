@@ -1,4 +1,4 @@
-# ⭕️ Repository moved to the [official repo](https://github.com/far-edge/DistributedLedger/tree/develop/ledger-client) ⭕️ 
+## ⚠︎ Warning!!! Repository moved to the [official repo](https://github.com/far-edge/DistributedLedger/tree/develop/ledger-client) ⚠︎
 # LedgerClient Library for Hyperledger Fabric 1.0
 
 **LedgerClient** is a *Java 8* library to interface with an [Hyperledger Fabric](https://hyperledger-fabric.readthedocs.io/en/latest/) blockchain using the [Hyperledger Fabric SDK Java](https://github.com/hyperledger/fabric-sdk-java).
